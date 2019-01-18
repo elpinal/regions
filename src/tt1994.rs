@@ -23,6 +23,7 @@ impl fmt::Display for RName {
 }
 
 /// A store.
+#[derive(Default)]
 pub struct Store(HashMap<RName, Region>);
 
 /// A place, either a region variable or a region name.
