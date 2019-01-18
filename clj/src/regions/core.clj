@@ -3,7 +3,9 @@
 
 (def esop "European Symposium on Programming")
 (def fool "Foundations of Object-Oriented Languages")
+(def hoots "Higher Order Operational Techniques in Semantics")
 (def hosc "Higher-Order and Symbolic Computation")
+(def ic "Information and Computation")
 (def icalp "ICALP")
 (def icfp "ICFP")
 (def ifl "Implementation and Application of Functional Languages")
@@ -20,16 +22,19 @@
 (def toplas "ACM Transactions on Programming Languages and Systems")
 
 (def birkedal "Lars Birkedal")
+(def calcagno "Christiano Calcagno")
 (def cardelli "Luca Cardelli")
 (def crary "Karl Crary")
 (def elsman "Martin Elsman")
 (def hallenberg "Niels Hallenberg")
 (def harper "Robert Harper")
+(def helsen "Simon Helsen")
 (def jouvelot "Pierre Jouvelot")
 (def leroy "Xavier Leroy")
 (def mitchell "John C. Mitchell")
 (def moggi "Eugenio Moggi")
 (def talpin "Jean-Pierre Talpin")
+(def thiemann "Peter Thiemann")
 (def tofte "Mads Tofte")
 (def vejlstrup "Magnus Vejlstrup")
 
@@ -158,6 +163,13 @@
     :location (journal-location "Information and Computation" :volume 132 :number 2 :pages '(109 176))
     :url      "https://doi.org/10.1006/inco.1996.2613"}
 
+   :thi1997
+   {:title    "Correctness of a region-based binding-time analysis"
+    :author   thiemann
+    :date     1997
+    :location (journal-location "Electronic Notes in Theoretical Computer Science" :volume 6 :pages '(365 390))
+    :url      "https://doi.org/10.1016/S1571-0661(05)80148-3"}
+
    :tb1998
    {:title    "A region inference algorithm"
     :author   (authors tofte birkedal)
@@ -179,6 +191,14 @@
     :location (book-location "Proof, Language, and Interaction. Essays in Honour of Robin Milner" :publisher "MIT Press")
     :url      "http://www.cs.au.dk/~birke/papers/unipri.ps.gz"}
 
+   :ht2000
+   {:title    "Syntactic type soundness for the region calculus"
+    :author   (authors helsen thiemann)
+    :date     2000
+    :month    :september
+    :location (proceedings-location hoots :pages '(1 20))
+    :url      "https://doi.org/10.1016/S1571-0661(04)80870-3"}
+
    :bt2001
    {:title    "A constraint-based region inference algorithm"
     :author   (authors birkedal tofte)
@@ -186,6 +206,14 @@
     :month    :may
     :location (journal-location tcs :volume 258 :number 1 :pages '(299 392))
     :url      "http://www.cs.au.dk/~birke/papers/conria.ps.gz"}
+
+   :cht2002
+   {:title    "Syntactic type soundness results for the region calculus"
+    :author   (authors calcagno helsen thiemann)
+    :date     2002
+    :month    :march
+    :location (journal-location ic :volume 173 :number 2 :pages '(199 221))
+    :url      "https://doi.org/10.1006/inco.2001.3112"}
 
    :eh2002
    {:title    "A region-based abstract machine for the ML Kit"
@@ -201,6 +229,13 @@
     :date     2004
     :location (journal-location hosc :volume 17 :number 3 :pages '(245 265))
     :url      "http://elsman.com/mlkit/pdf/retro.pdf"}
+
+   :hel2004
+   {:title    "Bisimilarity for the region calculus"
+    :author   helsen
+    :date     2004
+    :location (journal-location hosc :volume 17 :number 4 :pages '(347 394))
+    :url      "https://www.researchgate.net/publication/220606930_Bisimilarity_for_the_Region_Calculus"}
    ))
 
 (defn -main
