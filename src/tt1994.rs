@@ -181,7 +181,7 @@ impl Store {
     }
 
     pub fn lookup(&self, addr: &Address) -> Result<&SValue> {
-        self.get(&addr.region)?.get(&addr.offset)
+        self.get(&addr.region)?.get(addr.offset)
     }
 
     pub fn reduce(&mut self, t: Term, env: &mut VEnv) -> Result<Value> {
@@ -194,10 +194,8 @@ impl Store {
 }
 
 impl Region {
-    pub fn get(&self, offset: &Offset) -> Result<&SValue> {
-        self.0
-            .get(offset.0)
-            .ok_or(RError::UnboundOffset { offset: *offset })
+    pub fn get(&self, offset: Offset) -> Result<&SValue> {
+        self.0.get(offset.0).ok_or(RError::UnboundOffset { offset })
     }
 }
 
