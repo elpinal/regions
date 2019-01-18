@@ -68,13 +68,13 @@ pub enum Term {
     Let(Box<Term>, Box<Term>),
 
     /// A letrec-expression.
-    LetRec(Vec<RVar>, Place, Box<Term>, Box<Term>),
+    LetRec(usize, Place, Box<Term>, Box<Term>),
 
     /// An instantiation.
     Inst(FVar, Vec<Place>, Place),
 
     /// A letregion-expression.
-    LetRegion(RVar, Box<Term>),
+    LetRegion(Box<Term>),
 }
 
 /// A region.
@@ -91,7 +91,7 @@ pub enum SValue {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Closure {
     Plain(Term, VEnv),
-    Region(Vec<RVar>, Term, VEnv),
+    Region(usize, Term, VEnv),
 }
 
 /// A variable environment.
@@ -203,9 +203,8 @@ impl Region {
 
 impl Term {
     /// Creates an n-ary letregion-expression.
-    pub fn letregion(v: Vec<RVar>, t: Term) -> Term {
-        v.into_iter()
-            .fold(t, |t, v| Term::LetRegion(v, Box::new(t)))
+    pub fn letregion(n: usize, t: Term) -> Term {
+        (0..n).fold(t, |t, _| Term::LetRegion(Box::new(t)))
     }
 }
 
