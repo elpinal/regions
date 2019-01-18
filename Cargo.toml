@@ -5,3 +5,4 @@ authors = ["elpinal <elpinal@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
+failure = "0.1.5"
