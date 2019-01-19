@@ -133,6 +133,9 @@ pub enum RError {
 
     #[fail(display = "not closure: {:?}", value)]
     NotClosure { value: SValue },
+
+    #[fail(display = "not region name: {:?}", place)]
+    NotRegionName { place: Place },
 }
 
 type Result<T> = result::Result<T, RError>;
@@ -158,6 +161,17 @@ impl Place {
         match self {
             Var(v) => Var(RVar(v.0 + d)),
             Name(_) => self,
+        }
+    }
+}
+
+impl TryFrom<Place> for RName {
+    type Error = RError;
+
+    fn try_from(p: Place) -> result::Result<Self, Self::Error> {
+        match p {
+            Place::Name(name) => Ok(name),
+            _ => Err(RError::NotRegionName { place: p }),
         }
     }
 }
