@@ -1,7 +1,6 @@
 //! Tofte and Talpin. POPL 1994.
 //! “Implementation of the typed call-by-value λ-calculus using a stack of regions.”
 
-use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::result;
@@ -24,7 +23,7 @@ impl fmt::Display for RName {
 
 /// A store.
 #[derive(Debug, Default, PartialEq)]
-pub struct Store(HashMap<RName, Region>);
+pub struct Store(Vec<Region>);
 
 /// A place, either a region variable or a region name.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -251,11 +250,7 @@ pub type Value = Address;
 
 impl Store {
     pub fn new() -> Store {
-        Store(HashMap::new())
-    }
-
-    pub fn from_vec(v: Vec<(RName, Region)>) -> Self {
-        Store(v.into_iter().collect())
+        Store(vec![])
     }
 
     fn new_offset(&self, name: &RName) -> Result<Offset> {
@@ -264,7 +259,7 @@ impl Store {
 
     pub fn get(&self, name: &RName) -> Result<&Region> {
         self.0
-            .get(name)
+            .get(name.0)
             .ok_or_else(|| RError::UnboundRegionName { name: name.clone() })
     }
 
@@ -274,7 +269,8 @@ impl Store {
 
     fn put(&mut self, addr: Address, sv: SValue) {
         let offset = addr.offset;
-        self.0.entry(addr.region).and_modify(|r| r.put(offset, sv));
+        let r = self.0.get_mut(addr.region.0).expect("put");
+        r.put(offset, sv);
     }
 
     pub fn reduce(&mut self, t: Term, env: &mut VEnv) -> Result<Value> {
@@ -708,14 +704,14 @@ mod tests {
         );
 
         assert_reduce_store_err!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::Inst(FVar(0), vec![], Place::var(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::UnboundOffset { offset: Offset(0) }
         );
 
         assert_reduce_store_err!(
-            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(55)]))]),
+            Store(vec![Region(vec![SValue::Int(55)])]),
             Term::Inst(FVar(0), vec![], Place::var(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotRegionName {
@@ -724,7 +720,7 @@ mod tests {
         );
 
         assert_reduce_store_err!(
-            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(55)]))]),
+            Store(vec![Region(vec![SValue::Int(55)])]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotClosure {
@@ -733,13 +729,10 @@ mod tests {
         );
 
         assert_reduce_store_err!(
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Plain(
-                    Term::var(0),
-                    VEnv::new(),
-                ))]),
-            )]),
+            Store(vec![Region(vec![SValue::Closure(Closure::Plain(
+                Term::var(0),
+                VEnv::new(),
+            ))]),]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotRegionClosure {
@@ -748,70 +741,52 @@ mod tests {
         );
 
         assert_reduce_store_err!(
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    1,
-                    Term::var(0),
-                    VEnv::new(),
-                ))]),
-            )]),
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                1,
+                Term::var(0),
+                VEnv::new(),
+            ))]),]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::ArityMismatch { expect: 1, got: 0 }
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    0,
-                    Term::var(0),
-                    VEnv::new(),
-                ))]),
-            )]),
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                0,
+                Term::var(0),
+                VEnv::new(),
+            ))]),]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Closure(Closure::Region(0, Term::var(0), VEnv::new())),
-                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Closure(Closure::Region(0, Term::var(0), VEnv::new())),
+                SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    1,
-                    Term::var(0),
-                    VEnv::new(),
-                ))]),
-            )]),
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                1,
+                Term::var(0),
+                VEnv::new(),
+            ))]),]),
             Term::Inst(FVar(0), vec![Place::var(73)], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
-                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
+                SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    2,
-                    Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
-                    VEnv::new(),
-                ))]),
-            )]),
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                2,
+                Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
+                VEnv::new(),
+            ))]),]),
             Term::Inst(
                 FVar(0),
                 vec![Place::var(73), Place::name(686)],
@@ -819,20 +794,17 @@ mod tests {
             ),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Closure(Closure::Region(
-                        2,
-                        Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
-                        VEnv::new(),
-                    )),
-                    SValue::Closure(Closure::Plain(
-                        Term::abs(Term::abs(Term::var(0), Place::name(686)), Place::var(73)),
-                        VEnv::new(),
-                    ))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Closure(Closure::Region(
+                    2,
+                    Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
+                    VEnv::new(),
+                )),
+                SValue::Closure(Closure::Plain(
+                    Term::abs(Term::abs(Term::var(0), Place::name(686)), Place::var(73)),
+                    VEnv::new(),
+                ))
+            ])])
         );
 
         assert_reduce_err!(
@@ -850,102 +822,84 @@ mod tests {
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region::new())]),
+            Store(vec![Region::new()]),
             Term::abs(Term::var(0), Place::name(0)),
             vec![],
             Address::new(RName(0), Offset(0)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Plain(
-                    Term::var(0),
-                    VEnv::new()
-                ))])
-            )])
+            Store(vec![Region(vec![SValue::Closure(Closure::Plain(
+                Term::var(0),
+                VEnv::new()
+            ))])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Store(vec![Region(vec![SValue::Int(4004)])]),
             Term::abs(Term::var(0), Place::name(0)),
             vec![],
             Address::new(RName(0), Offset(1)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Int(4004),
-                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Int(4004),
+                SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Store(vec![Region(vec![SValue::Int(4004)])]),
             Term::app(Term::abs(Term::var(0), Place::name(0)), Term::var(0)),
             vec![Address::new(RName(39), Offset(24))],
             Address::new(RName(39), Offset(24)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Int(4004),
-                    SValue::Closure(Closure::Plain(
-                        Term::var(0),
-                        VEnv(vec![Address::new(RName(39), Offset(24))])
-                    ))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Int(4004),
+                SValue::Closure(Closure::Plain(
+                    Term::var(0),
+                    VEnv(vec![Address::new(RName(39), Offset(24))])
+                ))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Store(vec![Region(vec![SValue::Int(4004)])]),
             Term::let_(Term::abs(Term::var(0), Place::name(0)), Term::var(0)),
             vec![],
             Address::new(RName(0), Offset(1)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Int(4004),
-                    SValue::Closure(Closure::Plain(Term::var(0), VEnv(vec![])))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Int(4004),
+                SValue::Closure(Closure::Plain(Term::var(0), VEnv(vec![])))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::letrec(0, Place::name(0), Term::var(0), Term::var(1)),
             vec![Address::new(RName(5), Offset(23))],
             Address::new(RName(5), Offset(23)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    0,
-                    Term::var(0),
-                    VEnv(vec![
-                        Address::new(RName(5), Offset(23)),
-                        Address::new(RName(0), Offset(0))
-                    ])
-                ))])
-            )])
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                0,
+                Term::var(0),
+                VEnv(vec![
+                    Address::new(RName(5), Offset(23)),
+                    Address::new(RName(0), Offset(0))
+                ])
+            ))])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::letrec(0, Place::name(0), Term::var(0), Term::var(0)),
             vec![Address::new(RName(5), Offset(23))],
             Address::new(RName(0), Offset(0)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    0,
-                    Term::var(0),
-                    VEnv(vec![
-                        Address::new(RName(5), Offset(23)),
-                        Address::new(RName(0), Offset(0))
-                    ])
-                ))])
-            )])
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                0,
+                Term::var(0),
+                VEnv(vec![
+                    Address::new(RName(5), Offset(23)),
+                    Address::new(RName(0), Offset(0))
+                ])
+            ))])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::letrec(
                 0,
                 Place::name(0),
@@ -954,56 +908,47 @@ mod tests {
             ),
             vec![Address::new(RName(5), Offset(23))],
             Address::new(RName(5), Offset(23)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![
-                    SValue::Closure(Closure::Region(
-                        0,
-                        Term::var(0),
-                        VEnv(vec![
-                            Address::new(RName(5), Offset(23)),
-                            Address::new(RName(0), Offset(0))
-                        ])
-                    )),
-                    SValue::Closure(Closure::Plain(
-                        Term::var(0),
-                        VEnv(vec![
-                            Address::new(RName(5), Offset(23)),
-                            Address::new(RName(0), Offset(0))
-                        ])
-                    ))
-                ])
-            )])
+            Store(vec![Region(vec![
+                SValue::Closure(Closure::Region(
+                    0,
+                    Term::var(0),
+                    VEnv(vec![
+                        Address::new(RName(5), Offset(23)),
+                        Address::new(RName(0), Offset(0))
+                    ])
+                )),
+                SValue::Closure(Closure::Plain(
+                    Term::var(0),
+                    VEnv(vec![
+                        Address::new(RName(5), Offset(23)),
+                        Address::new(RName(0), Offset(0))
+                    ])
+                ))
+            ])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::letrec(0, Place::name(0), Term::var(1), Term::var(0)),
             vec![],
             Address::new(RName(0), Offset(0)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    0,
-                    Term::var(1),
-                    VEnv(vec![Address::new(RName(0), Offset(0))])
-                ))])
-            )])
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                0,
+                Term::var(1),
+                VEnv(vec![Address::new(RName(0), Offset(0))])
+            ))])])
         );
 
         assert_reduce_store_ok!(
-            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Store(vec![Region(vec![])]),
             Term::letrec(1, Place::name(0), Term::var(1), Term::var(0)),
             vec![],
             Address::new(RName(0), Offset(0)),
-            Store::from_vec(vec![(
-                RName(0),
-                Region(vec![SValue::Closure(Closure::Region(
-                    1,
-                    Term::var(1),
-                    VEnv(vec![Address::new(RName(0), Offset(0))])
-                ))])
-            )])
+            Store(vec![Region(vec![SValue::Closure(Closure::Region(
+                1,
+                Term::var(1),
+                VEnv(vec![Address::new(RName(0), Offset(0))])
+            ))])])
         );
     }
 }
