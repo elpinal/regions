@@ -216,6 +216,10 @@ impl Term {
         (0..n).fold(t, |t, _| Term::LetRegion(Box::new(t)))
     }
 
+    fn var(n: usize) -> Term {
+        Term::Var(Var(n))
+    }
+
     fn abs(t: Term, p: Place) -> Term {
         Term::Abs(Box::new(t), p)
     }
