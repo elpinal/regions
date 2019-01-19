@@ -907,5 +907,103 @@ mod tests {
                 ])
             )])
         );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Term::letrec(0, Place::name(0), Term::var(0), Term::var(1)),
+            vec![Address::new(RName(5), Offset(23))],
+            Address::new(RName(5), Offset(23)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    0,
+                    Term::var(0),
+                    VEnv(vec![
+                        Address::new(RName(5), Offset(23)),
+                        Address::new(RName(0), Offset(0))
+                    ])
+                ))])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Term::letrec(0, Place::name(0), Term::var(0), Term::var(0)),
+            vec![Address::new(RName(5), Offset(23))],
+            Address::new(RName(0), Offset(0)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    0,
+                    Term::var(0),
+                    VEnv(vec![
+                        Address::new(RName(5), Offset(23)),
+                        Address::new(RName(0), Offset(0))
+                    ])
+                ))])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Term::letrec(
+                0,
+                Place::name(0),
+                Term::var(0),
+                Term::app(Term::Inst(FVar(0), vec![], Place::name(0)), Term::var(1))
+            ),
+            vec![Address::new(RName(5), Offset(23))],
+            Address::new(RName(5), Offset(23)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Closure(Closure::Region(
+                        0,
+                        Term::var(0),
+                        VEnv(vec![
+                            Address::new(RName(5), Offset(23)),
+                            Address::new(RName(0), Offset(0))
+                        ])
+                    )),
+                    SValue::Closure(Closure::Plain(
+                        Term::var(0),
+                        VEnv(vec![
+                            Address::new(RName(5), Offset(23)),
+                            Address::new(RName(0), Offset(0))
+                        ])
+                    ))
+                ])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Term::letrec(0, Place::name(0), Term::var(1), Term::var(0)),
+            vec![],
+            Address::new(RName(0), Offset(0)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    0,
+                    Term::var(1),
+                    VEnv(vec![Address::new(RName(0), Offset(0))])
+                ))])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
+            Term::letrec(1, Place::name(0), Term::var(1), Term::var(0)),
+            vec![],
+            Address::new(RName(0), Offset(0)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    1,
+                    Term::var(1),
+                    VEnv(vec![Address::new(RName(0), Offset(0))])
+                ))])
+            )])
+        );
     }
 }
