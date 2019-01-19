@@ -269,6 +269,14 @@ impl Store {
                 self.put(addr.clone(), sv);
                 Ok(addr)
             }
+            Abs(t, p) => {
+                let name = p.try_into()?;
+                let offset = self.new_offset(&name)?;
+                let addr = Address::new(name, offset);
+                let sv = SValue::Closure(Closure::Plain(*t, env.clone()));
+                self.put(addr.clone(), sv);
+                Ok(addr)
+            }
             _ => unimplemented!(),
         }
     }
