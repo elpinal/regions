@@ -223,9 +223,12 @@ impl VEnv {
         VEnv(vec![])
     }
 
-    fn insert(mut self, addr: Address) -> Self {
-        self.0.push(addr);
-        self
+    fn insert(&mut self, addr: Address) {
+        self.0.push(addr)
+    }
+
+    fn pop(&mut self) {
+        self.0.pop().expect("VEnv::pop: expect non-empty");
     }
 
     pub fn get(&self, v: &Var) -> Result<&Address> {
@@ -303,9 +306,17 @@ impl Store {
             }
             App(t1, t2) => {
                 let addr = self.reduce(*t1, env)?;
-                let (t, env0) = Closure::try_from(self.lookup(&addr)?.clone())?.try_into()?;
+                let (t, mut env0) = Closure::try_from(self.lookup(&addr)?.clone())?.try_into()?;
                 let v = self.reduce(*t2, env)?;
-                self.reduce(t, &mut env0.insert(v))
+                env0.insert(v);
+                self.reduce(t, &mut env0)
+            }
+            Let(t1, t2) => {
+                let v = self.reduce(*t1, env)?;
+                env.insert(v);
+                let r = self.reduce(*t2, env);
+                env.pop();
+                r
             }
             _ => unimplemented!(),
         }
