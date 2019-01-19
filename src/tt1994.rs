@@ -237,6 +237,25 @@ impl Term {
             LetRegion(t) => Term::letregion(1, t.map(f, c + 1)),
         }
     }
+
+    pub fn shift_above(self, c: usize, d: isize) -> Term {
+        use Place::*;
+        let f = |c, p| match p {
+            Name(_) => p,
+            Var(ref v) => {
+                if c <= v.0 {
+                    Var(RVar((v.0 as isize + d) as usize))
+                } else {
+                    p
+                }
+            }
+        };
+        self.map(&f, c)
+    }
+
+    pub fn shift(self, d: isize) -> Term {
+        self.shift_above(0, d)
+    }
 }
 
 #[cfg(test)]
