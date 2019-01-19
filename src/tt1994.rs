@@ -23,7 +23,7 @@ impl fmt::Display for RName {
 }
 
 /// A store.
-#[derive(Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Store(HashMap<RName, Region>);
 
 /// A place, either a region variable or a region name.
@@ -79,6 +79,7 @@ pub enum Term {
 }
 
 /// A region.
+#[derive(Debug, PartialEq)]
 pub struct Region(Vec<SValue>);
 
 /// A storable value.
@@ -403,9 +404,10 @@ mod tests {
     }
 
     macro_rules! assert_reduce_store_ok {
-        ($s:expr, $t:expr, $v:expr, $a:expr) => {{
+        ($s:expr, $t:expr, $v:expr, $a:expr, $sr:expr) => {{
             let mut s = $s;
-            assert_eq!(s.reduce($t, &mut VEnv($v)), Ok($a))
+            assert_eq!(s.reduce($t, &mut VEnv($v)), Ok($a));
+            assert_eq!(s, $sr);
         }};
     }
 
@@ -512,7 +514,45 @@ mod tests {
             s,
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
-            Address::new(RName(0), Offset(1))
+            Address::new(RName(0), Offset(1)),
+            Store(
+                vec![(
+                    RName(0),
+                    Region(vec![
+                        SValue::Closure(Closure::Region(0, Term::var(0), VEnv::new())),
+                        SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                    ])
+                )]
+                .into_iter()
+                .collect()
+            )
+        );
+
+        let mut s = Store::new();
+        s.0.insert(
+            RName(0),
+            Region(vec![SValue::Closure(Closure::Region(
+                1,
+                Term::var(0),
+                VEnv::new(),
+            ))]),
+        );
+        assert_reduce_store_ok!(
+            s,
+            Term::Inst(FVar(0), vec![Place::var(73)], Place::name(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            Address::new(RName(0), Offset(1)),
+            Store(
+                vec![(
+                    RName(0),
+                    Region(vec![
+                        SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
+                        SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                    ])
+                )]
+                .into_iter()
+                .collect()
+            )
         );
     }
 
