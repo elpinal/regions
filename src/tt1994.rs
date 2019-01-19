@@ -441,19 +441,15 @@ mod tests {
             RError::UnboundRegionName { name: RName(0) }
         );
 
-        let mut s = Store::new();
-        s.0.insert(RName(0), Region(vec![]));
         assert_reduce_store_err!(
-            s,
+            Store::from_vec(vec![(RName(0), Region(vec![]))]),
             Term::Inst(FVar(0), vec![], Place::var(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::UnboundOffset { offset: Offset(0) }
         );
 
-        let mut s = Store::new();
-        s.0.insert(RName(0), Region(vec![SValue::Int(55)]));
         assert_reduce_store_err!(
-            s,
+            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(55)]))]),
             Term::Inst(FVar(0), vec![], Place::var(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotRegionName {
@@ -461,10 +457,8 @@ mod tests {
             }
         );
 
-        let mut s = Store::new();
-        s.0.insert(RName(0), Region(vec![SValue::Int(55)]));
         assert_reduce_store_err!(
-            s,
+            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(55)]))]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotClosure {
@@ -472,16 +466,14 @@ mod tests {
             }
         );
 
-        let mut s = Store::new();
-        s.0.insert(
-            RName(0),
-            Region(vec![SValue::Closure(Closure::Plain(
-                Term::var(0),
-                VEnv::new(),
-            ))]),
-        );
         assert_reduce_store_err!(
-            s,
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Plain(
+                    Term::var(0),
+                    VEnv::new(),
+                ))]),
+            )]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::NotRegionClosure {
@@ -489,33 +481,29 @@ mod tests {
             }
         );
 
-        let mut s = Store::new();
-        s.0.insert(
-            RName(0),
-            Region(vec![SValue::Closure(Closure::Region(
-                1,
-                Term::var(0),
-                VEnv::new(),
-            ))]),
-        );
         assert_reduce_store_err!(
-            s,
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    1,
+                    Term::var(0),
+                    VEnv::new(),
+                ))]),
+            )]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             RError::ArityMismatch { expect: 1, got: 0 }
         );
 
-        let mut s = Store::new();
-        s.0.insert(
-            RName(0),
-            Region(vec![SValue::Closure(Closure::Region(
-                0,
-                Term::var(0),
-                VEnv::new(),
-            ))]),
-        );
         assert_reduce_store_ok!(
-            s,
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    0,
+                    Term::var(0),
+                    VEnv::new(),
+                ))]),
+            )]),
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
@@ -528,17 +516,15 @@ mod tests {
             )])
         );
 
-        let mut s = Store::new();
-        s.0.insert(
-            RName(0),
-            Region(vec![SValue::Closure(Closure::Region(
-                1,
-                Term::var(0),
-                VEnv::new(),
-            ))]),
-        );
         assert_reduce_store_ok!(
-            s,
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    1,
+                    Term::var(0),
+                    VEnv::new(),
+                ))]),
+            )]),
             Term::Inst(FVar(0), vec![Place::var(73)], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
