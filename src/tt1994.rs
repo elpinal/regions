@@ -149,6 +149,10 @@ impl TryFrom<SValue> for Closure {
 }
 
 impl Place {
+    fn var(n: usize) -> Place {
+        Place::Var(RVar(n))
+    }
+
     fn shift(self, d: usize) -> Place {
         use Place::*;
         match self {
@@ -391,6 +395,135 @@ mod tests {
                 Place::Var(RVar(21)),
                 Term::abs(Term::Var(Var(1024)), Place::Var(RVar(12))),
                 Term::abs(Term::Var(Var(0)), Place::Var(RVar(41)))
+            )
+        );
+    }
+
+    macro_rules! subst_top_id {
+        ($t:expr, $p:expr) => {
+            assert_eq!($t.subst_top($p), $t)
+        };
+    }
+
+    #[test]
+    fn test_subst_top() {
+        subst_top_id!(Term::var(0), Place::var(0));
+        subst_top_id!(Term::var(1), Place::var(0));
+
+        subst_top_id!(
+            Term::abs(Term::var(1), Place::Name(RName(100))),
+            Place::var(0)
+        );
+        subst_top_id!(
+            Term::abs(Term::var(0), Place::Name(RName(100))),
+            Place::var(1)
+        );
+
+        assert_eq!(
+            Term::abs(Term::var(0), Place::var(0)).subst_top(Place::var(77)),
+            Term::abs(Term::var(0), Place::var(77))
+        );
+
+        assert_eq!(
+            Term::abs(Term::var(0), Place::var(1)).subst_top(Place::var(96)),
+            Term::abs(Term::var(0), Place::var(0))
+        );
+
+        assert_eq!(
+            Term::abs(Term::var(0), Place::var(8)).subst_top(Place::var(96)),
+            Term::abs(Term::var(0), Place::var(7))
+        );
+
+        subst_top_id!(
+            Term::letregion(1, Term::abs(Term::var(0), Place::var(0))),
+            Place::var(44)
+        );
+
+        assert_eq!(
+            Term::letregion(1, Term::abs(Term::var(0), Place::var(1))).subst_top(Place::var(44)),
+            Term::letregion(1, Term::abs(Term::var(0), Place::var(45)))
+        );
+
+        subst_top_id!(
+            Term::letregion(2, Term::abs(Term::var(0), Place::var(1))),
+            Place::var(44)
+        );
+
+        assert_eq!(
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(7))).subst_top(Place::var(408)),
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(6)))
+        );
+
+        assert_eq!(
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(8))).subst_top(Place::var(408)),
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(7)))
+        );
+
+        assert_eq!(
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(20))).subst_top(Place::var(408)),
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(19)))
+        );
+
+        assert_eq!(
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(6))).subst_top(Place::var(408)),
+            Term::letregion(6, Term::abs(Term::var(0), Place::var(414)))
+        );
+
+        assert_eq!(
+            Term::letrec(
+                0,
+                Place::var(0),
+                Term::abs(Term::var(0), Place::var(0)),
+                Term::abs(Term::var(0), Place::var(0))
+            )
+            .subst_top(Place::var(28)),
+            Term::letrec(
+                0,
+                Place::var(28),
+                Term::abs(Term::var(0), Place::var(28)),
+                Term::abs(Term::var(0), Place::var(28))
+            )
+        );
+
+        assert_eq!(
+            Term::letrec(
+                1,
+                Place::var(0),
+                Term::abs(Term::var(0), Place::var(0)),
+                Term::abs(Term::var(0), Place::var(0))
+            )
+            .subst_top(Place::var(28)),
+            Term::letrec(
+                1,
+                Place::var(28),
+                Term::abs(Term::var(0), Place::var(0)),
+                Term::abs(Term::var(0), Place::var(28))
+            )
+        );
+
+        assert_eq!(
+            Term::letrec(
+                1,
+                Place::var(0),
+                Term::letrec(
+                    1,
+                    Place::var(0),
+                    Term::abs(Term::var(0), Place::var(0)),
+                    Term::abs(Term::var(0), Place::var(0)),
+                ),
+                Term::abs(Term::var(0), Place::var(0))
+            )
+            .subst_top(Place::var(28)),
+            Term::letrec(
+                1,
+                Place::var(28),
+                Term::letrec(
+                    1,
+                    Place::var(0),
+                    Term::abs(Term::var(0), Place::var(0)),
+                    Term::abs(Term::var(0), Place::var(0)),
+                ),
+                Term::abs(Term::var(0), Place::var(28))
             )
         );
     }
