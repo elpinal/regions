@@ -229,6 +229,10 @@ impl Store {
         Store(HashMap::new())
     }
 
+    pub fn from_vec(v: Vec<(RName, Region)>) -> Self {
+        Store(v.into_iter().collect())
+    }
+
     fn new_offset(&self, name: &RName) -> Result<Offset> {
         Ok(self.get(name)?.new_offset())
     }
@@ -515,17 +519,13 @@ mod tests {
             Term::Inst(FVar(0), vec![], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
-            Store(
-                vec![(
-                    RName(0),
-                    Region(vec![
-                        SValue::Closure(Closure::Region(0, Term::var(0), VEnv::new())),
-                        SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
-                    ])
-                )]
-                .into_iter()
-                .collect()
-            )
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Closure(Closure::Region(0, Term::var(0), VEnv::new())),
+                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                ])
+            )])
         );
 
         let mut s = Store::new();
@@ -542,17 +542,13 @@ mod tests {
             Term::Inst(FVar(0), vec![Place::var(73)], Place::name(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(1)),
-            Store(
-                vec![(
-                    RName(0),
-                    Region(vec![
-                        SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
-                        SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
-                    ])
-                )]
-                .into_iter()
-                .collect()
-            )
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
+                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                ])
+            )])
         );
     }
 
