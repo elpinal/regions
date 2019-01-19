@@ -325,6 +325,16 @@ impl Store {
                 env.pop();
                 r
             }
+            LetRec(n, p, t1, t2) => {
+                let name = p.try_into()?;
+                let offset = self.new_offset(&name);
+                let addr = Address::new(name, offset?);
+                env.insert(addr.clone());
+                self.put(addr, SValue::Closure(Closure::Region(n, *t1, env.clone())));
+                let r = self.reduce(*t2, env);
+                env.pop();
+                r
+            }
             _ => unimplemented!(),
         }
     }
