@@ -96,7 +96,7 @@ pub enum Closure {
 }
 
 /// A variable environment.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct VEnv(Vec<Address>);
 
 /// An address.
@@ -169,11 +169,11 @@ impl TryFrom<Closure> for (usize, Term, VEnv) {
 }
 
 impl Place {
-    fn var(n: usize) -> Place {
+    pub fn var(n: usize) -> Place {
         Place::Var(RVar(n))
     }
 
-    fn name(n: usize) -> Place {
+    pub fn name(n: usize) -> Place {
         Place::Name(RName(n))
     }
 
@@ -204,7 +204,7 @@ impl Address {
 }
 
 impl VEnv {
-    fn new() -> Self {
+    pub fn new() -> Self {
         VEnv(vec![])
     }
 
@@ -294,7 +294,7 @@ impl Term {
         (0..n).fold(t, |t, _| Term::LetRegion(Box::new(t)))
     }
 
-    fn var(n: usize) -> Term {
+    pub fn var(n: usize) -> Term {
         Term::Var(Var(n))
     }
 
