@@ -229,7 +229,7 @@ impl Term {
         use Term::*;
         match self {
             Var(v) => Var(v),
-            Abs(t, p) => Term::abs(t.map(f, c), p),
+            Abs(t, p) => Term::abs(t.map(f, c), f(c, p)),
             App(t1, t2) => Term::app(t1.map(f, c), t2.map(f, c)),
             Let(t1, t2) => Term::let_(t1.map(f, c), t2.map(f, c)),
             LetRec(n, p, t1, t2) => Term::letrec(n, f(c, p), t1.map(f, c + n), t2.map(f, c)),
@@ -288,6 +288,77 @@ mod tests {
             Term::Var(Var(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(0))
+        );
+    }
+
+    macro_rules! shift_id {
+        ($t:expr, $n:expr) => {
+            assert_eq!($t.shift($n), $t)
+        };
+    }
+
+    #[test]
+    fn test_shift() {
+        shift_id!(Term::Var(Var(0)), 0);
+        shift_id!(Term::Var(Var(0)), 1);
+
+        shift_id!(Term::abs(Term::Var(Var(0)), Place::Var(RVar(0))), 0);
+
+        assert_eq!(
+            Term::abs(Term::Var(Var(0)), Place::Var(RVar(0))).shift(1),
+            Term::abs(Term::Var(Var(0)), Place::Var(RVar(1)))
+        );
+
+        assert_eq!(
+            Term::abs(Term::Var(Var(3)), Place::Var(RVar(34))).shift(780),
+            Term::abs(Term::Var(Var(3)), Place::Var(RVar(814)))
+        );
+
+        assert_eq!(
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(0)))).shift(29),
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(0))))
+        );
+
+        assert_eq!(
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(1)))).shift(29),
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(30))))
+        );
+
+        assert_eq!(
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(4)))).shift(68),
+            Term::letregion(1, Term::abs(Term::Var(Var(2)), Place::Var(RVar(72))))
+        );
+
+        assert_eq!(
+            Term::letrec(
+                1,
+                Place::Var(RVar(0)),
+                Term::abs(Term::Var(Var(1)), Place::Var(RVar(0))),
+                Term::abs(Term::Var(Var(1)), Place::Var(RVar(0)))
+            )
+            .shift(1),
+            Term::letrec(
+                1,
+                Place::Var(RVar(1)),
+                Term::abs(Term::Var(Var(1)), Place::Var(RVar(0))),
+                Term::abs(Term::Var(Var(1)), Place::Var(RVar(1)))
+            )
+        );
+
+        assert_eq!(
+            Term::letrec(
+                3,
+                Place::Var(RVar(12)),
+                Term::abs(Term::Var(Var(1024)), Place::Var(RVar(3))),
+                Term::abs(Term::Var(Var(0)), Place::Var(RVar(32)))
+            )
+            .shift(9),
+            Term::letrec(
+                3,
+                Place::Var(RVar(21)),
+                Term::abs(Term::Var(Var(1024)), Place::Var(RVar(12))),
+                Term::abs(Term::Var(Var(0)), Place::Var(RVar(41)))
+            )
         );
     }
 }
