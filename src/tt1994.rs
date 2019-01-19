@@ -173,6 +173,10 @@ impl Place {
         Place::Var(RVar(n))
     }
 
+    fn name(n: usize) -> Place {
+        Place::Name(RName(n))
+    }
+
     fn shift(self, d: usize) -> Place {
         use Place::*;
         match self {
@@ -200,6 +204,10 @@ impl Address {
 }
 
 impl VEnv {
+    fn new() -> Self {
+        VEnv(vec![])
+    }
+
     pub fn get(&self, v: &Var) -> Result<&Address> {
         self.0
             .get(v.0)
@@ -379,6 +387,20 @@ mod tests {
         }};
     }
 
+    macro_rules! assert_reduce_store_err {
+        ($s:expr, $t:expr, $v:expr, $e:expr) => {{
+            let mut s = $s;
+            assert_eq!(s.reduce($t, &mut VEnv($v)), Err($e))
+        }};
+    }
+
+    macro_rules! assert_reduce_store_ok {
+        ($s:expr, $t:expr, $v:expr, $a:expr) => {{
+            let mut s = $s;
+            assert_eq!(s.reduce($t, &mut VEnv($v)), Ok($a))
+        }};
+    }
+
     #[test]
     fn test_reduce() {
         assert_reduce_err!(
@@ -391,6 +413,98 @@ mod tests {
             Term::Var(Var(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(0))
+        );
+
+        assert_reduce_err!(
+            Term::Inst(FVar(0), vec![], Place::var(0)),
+            vec![],
+            RError::UnboundLetrecVariable { var: FVar(0) }
+        );
+
+        assert_reduce_err!(
+            Term::Inst(FVar(0), vec![], Place::var(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::UnboundRegionName { name: RName(0) }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(RName(0), Region(vec![]));
+        assert_reduce_store_err!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::var(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::UnboundOffset { offset: Offset(0) }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(RName(0), Region(vec![SValue::Int(55)]));
+        assert_reduce_store_err!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::var(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::NotRegionName {
+                place: Place::var(0)
+            }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(RName(0), Region(vec![SValue::Int(55)]));
+        assert_reduce_store_err!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::name(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::NotClosure {
+                value: SValue::Int(55)
+            }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(
+            RName(0),
+            Region(vec![SValue::Closure(Closure::Plain(
+                Term::var(0),
+                VEnv::new(),
+            ))]),
+        );
+        assert_reduce_store_err!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::name(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::NotRegionClosure {
+                closure: Closure::Plain(Term::var(0), VEnv::new())
+            }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(
+            RName(0),
+            Region(vec![SValue::Closure(Closure::Region(
+                1,
+                Term::var(0),
+                VEnv::new(),
+            ))]),
+        );
+        assert_reduce_store_err!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::name(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            RError::ArityMismatch { expect: 1, got: 0 }
+        );
+
+        let mut s = Store::new();
+        s.0.insert(
+            RName(0),
+            Region(vec![SValue::Closure(Closure::Region(
+                0,
+                Term::var(0),
+                VEnv::new(),
+            ))]),
+        );
+        assert_reduce_store_ok!(
+            s,
+            Term::Inst(FVar(0), vec![], Place::name(0)),
+            vec![Address::new(RName(0), Offset(0))],
+            Address::new(RName(0), Offset(1))
         );
     }
 
