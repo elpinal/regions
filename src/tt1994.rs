@@ -134,8 +134,14 @@ pub enum RError {
     #[fail(display = "not closure: {:?}", value)]
     NotClosure { value: SValue },
 
+    #[fail(display = "expected {}, but got {}", expect, got)]
+    ArityMismatch { expect: usize, got: usize },
+
     #[fail(display = "not region name: {:?}", place)]
     NotRegionName { place: Place },
+
+    #[fail(display = "not region closure: {:?}", closure)]
+    NotRegionClosure { closure: Closure },
 }
 
 type Result<T> = result::Result<T, RError>;
@@ -147,6 +153,17 @@ impl TryFrom<SValue> for Closure {
         match sv {
             SValue::Closure(c) => Ok(c),
             _ => Err(RError::NotClosure { value: sv }),
+        }
+    }
+}
+
+impl TryFrom<Closure> for (usize, Term, VEnv) {
+    type Error = RError;
+
+    fn try_from(c: Closure) -> result::Result<Self, Self::Error> {
+        match c {
+            Closure::Region(n, t, env) => Ok((n, t, env)),
+            _ => Err(RError::NotRegionClosure { closure: c }),
         }
     }
 }
@@ -203,6 +220,10 @@ impl Store {
         Store(HashMap::new())
     }
 
+    fn new_offset(&self, name: &RName) -> Result<Offset> {
+        Ok(self.get(name)?.new_offset())
+    }
+
     pub fn get(&self, name: &RName) -> Result<&Region> {
         self.0
             .get(name)
@@ -213,18 +234,49 @@ impl Store {
         self.get(&addr.region)?.get(addr.offset)
     }
 
+    fn put(&mut self, addr: Address, sv: SValue) -> () {
+        let offset = addr.offset;
+        self.0.entry(addr.region).and_modify(|r| r.put(offset, sv));
+    }
+
     pub fn reduce(&mut self, t: Term, env: &mut VEnv) -> Result<Value> {
         use Term::*;
         match t {
             Var(v) => Ok(env.get(&v)?.clone()),
+            Inst(fv, ps, p) => {
+                let addr = env.get_letrec(&fv)?;
+                let sv = self.lookup(addr)?.clone();
+                let name = RName::try_from(p)?;
+                let (n, t, env) = Closure::try_from(sv)?.try_into()?;
+                if ps.len() != n {
+                    return Err(RError::ArityMismatch {
+                        expect: n,
+                        got: ps.len(),
+                    });
+                }
+                let t = ps.into_iter().fold(t, |t, p| t.subst_top(p));
+                let sv = SValue::Closure(Closure::Plain(t, env));
+                let offset = self.new_offset(&name)?;
+                let addr = Address::new(name, offset);
+                self.put(addr.clone(), sv);
+                Ok(addr)
+            }
             _ => unimplemented!(),
         }
     }
 }
 
 impl Region {
+    fn new_offset(&self) -> Offset {
+        Offset(self.0.len())
+    }
+
     pub fn get(&self, offset: Offset) -> Result<&SValue> {
         self.0.get(offset.0).ok_or(RError::UnboundOffset { offset })
+    }
+
+    fn put(&mut self, offset: Offset, sv: SValue) -> () {
+        self.0.insert(offset.0, sv)
     }
 }
 
