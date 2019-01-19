@@ -148,6 +148,16 @@ impl TryFrom<SValue> for Closure {
     }
 }
 
+impl Place {
+    fn shift(self, d: usize) -> Place {
+        use Place::*;
+        match self {
+            Var(v) => Var(RVar(v.0 + d)),
+            Name(_) => self,
+        }
+    }
+}
+
 impl Address {
     fn new(region: RName, offset: Offset) -> Address {
         Address { region, offset }
@@ -255,6 +265,25 @@ impl Term {
 
     pub fn shift(self, d: isize) -> Term {
         self.shift_above(0, d)
+    }
+
+    pub fn subst(self, j: usize, q: Place) -> Term {
+        use Place::*;
+        let f = |c, p| match p {
+            Name(_) => p,
+            Var(ref v) => {
+                if j + c == v.0 {
+                    q.clone().shift(c)
+                } else {
+                    p
+                }
+            }
+        };
+        self.map(&f, 0)
+    }
+
+    pub fn subst_top(self, q: Place) -> Term {
+        self.subst(0, q.shift(1)).shift(-1)
     }
 }
 
