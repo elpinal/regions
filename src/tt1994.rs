@@ -253,6 +253,12 @@ impl Store {
         Store(vec![])
     }
 
+    fn new_region(&mut self) -> RName {
+        let name = RName(self.0.len());
+        self.0.push(Default::default());
+        name
+    }
+
     fn new_offset(&self, name: &RName) -> Result<Offset> {
         Ok(self.get(name)?.new_offset())
     }
@@ -271,6 +277,10 @@ impl Store {
         let offset = addr.offset;
         let r = self.0.get_mut(addr.region.0).expect("put");
         r.put(offset, sv);
+    }
+
+    fn pop(&mut self) {
+        self.0.pop().expect("pop");
     }
 
     pub fn reduce(&mut self, t: Term, env: &mut VEnv) -> Result<Value> {
@@ -331,7 +341,13 @@ impl Store {
                 env.pop();
                 r
             }
-            _ => unimplemented!(),
+            LetRegion(t) => {
+                let name = Place::Name(self.new_region());
+                let t = (*t).subst_top(name);
+                let r = self.reduce(t, env);
+                self.pop();
+                r
+            }
         }
     }
 }
