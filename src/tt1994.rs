@@ -143,6 +143,9 @@ pub enum RError {
 
     #[fail(display = "not region closure: {:?}", closure)]
     NotRegionClosure { closure: Closure },
+
+    #[fail(display = "not plain closure: {:?}", closure)]
+    NotPlainClosure { closure: Closure },
 }
 
 type Result<T> = result::Result<T, RError>;
@@ -165,6 +168,17 @@ impl TryFrom<Closure> for (usize, Term, VEnv) {
         match c {
             Closure::Region(n, t, env) => Ok((n, t, env)),
             _ => Err(RError::NotRegionClosure { closure: c }),
+        }
+    }
+}
+
+impl TryFrom<Closure> for (Term, VEnv) {
+    type Error = RError;
+
+    fn try_from(c: Closure) -> result::Result<Self, Self::Error> {
+        match c {
+            Closure::Plain(t, env) => Ok((t, env)),
+            _ => Err(RError::NotPlainClosure { closure: c }),
         }
     }
 }
@@ -207,6 +221,11 @@ impl Address {
 impl VEnv {
     pub fn new() -> Self {
         VEnv(vec![])
+    }
+
+    fn insert(mut self, addr: Address) -> Self {
+        self.0.push(addr);
+        self
     }
 
     pub fn get(&self, v: &Var) -> Result<&Address> {
@@ -281,6 +300,12 @@ impl Store {
                 let sv = SValue::Closure(Closure::Plain(*t, env.clone()));
                 self.put(addr.clone(), sv);
                 Ok(addr)
+            }
+            App(t1, t2) => {
+                let addr = self.reduce(*t1, env)?;
+                let (t, env0) = Closure::try_from(self.lookup(&addr)?.clone())?.try_into()?;
+                let v = self.reduce(*t2, env)?;
+                self.reduce(t, &mut env0.insert(v))
             }
             _ => unimplemented!(),
         }
