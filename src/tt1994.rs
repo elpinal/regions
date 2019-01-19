@@ -79,7 +79,7 @@ pub enum Term {
 }
 
 /// A region.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Region(Vec<SValue>);
 
 /// A storable value.
@@ -288,6 +288,10 @@ impl Store {
 }
 
 impl Region {
+    pub fn new() -> Self {
+        Region(vec![])
+    }
+
     fn new_offset(&self) -> Offset {
         Offset(self.0.len())
     }
@@ -532,6 +536,48 @@ mod tests {
                 RName(0),
                 Region(vec![
                     SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
+                    SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                ])
+            )])
+        );
+
+        assert_reduce_err!(
+            Term::abs(Term::var(0), Place::var(0)),
+            vec![],
+            RError::NotRegionName {
+                place: Place::var(0)
+            }
+        );
+
+        assert_reduce_err!(
+            Term::abs(Term::var(0), Place::name(0)),
+            vec![],
+            RError::UnboundRegionName { name: RName(0) }
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region::new())]),
+            Term::abs(Term::var(0), Place::name(0)),
+            vec![],
+            Address::new(RName(0), Offset(0)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Plain(
+                    Term::var(0),
+                    VEnv::new()
+                ))])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Term::abs(Term::var(0), Place::name(0)),
+            vec![],
+            Address::new(RName(0), Offset(1)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Int(4004),
                     SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
                 ])
             )])
