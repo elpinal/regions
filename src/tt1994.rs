@@ -829,5 +829,36 @@ mod tests {
                 ])
             )])
         );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Term::app(Term::abs(Term::var(0), Place::name(0)), Term::var(0)),
+            vec![Address::new(RName(39), Offset(24))],
+            Address::new(RName(39), Offset(24)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Int(4004),
+                    SValue::Closure(Closure::Plain(
+                        Term::var(0),
+                        VEnv(vec![Address::new(RName(39), Offset(24))])
+                    ))
+                ])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(RName(0), Region(vec![SValue::Int(4004)]))]),
+            Term::let_(Term::abs(Term::var(0), Place::name(0)), Term::var(0)),
+            vec![],
+            Address::new(RName(0), Offset(1)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Int(4004),
+                    SValue::Closure(Closure::Plain(Term::var(0), VEnv(vec![])))
+                ])
+            )])
+        );
     }
 }
