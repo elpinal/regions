@@ -291,7 +291,11 @@ impl Store {
                         got: ps.len(),
                     });
                 }
-                let t = ps.into_iter().fold(t, |t, p| t.subst_top(p));
+                let t = ps
+                    .into_iter()
+                    .enumerate()
+                    .fold(t, |t, (i, p)| t.subst(i, p.shift(n)))
+                    .shift(-(n as isize));
                 let sv = SValue::Closure(Closure::Plain(t, env));
                 let offset = self.new_offset(&name)?;
                 let addr = Address::new(name, offset);
@@ -784,6 +788,38 @@ mod tests {
                 Region(vec![
                     SValue::Closure(Closure::Region(1, Term::var(0), VEnv::new())),
                     SValue::Closure(Closure::Plain(Term::var(0), VEnv::new()))
+                ])
+            )])
+        );
+
+        assert_reduce_store_ok!(
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![SValue::Closure(Closure::Region(
+                    2,
+                    Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
+                    VEnv::new(),
+                ))]),
+            )]),
+            Term::Inst(
+                FVar(0),
+                vec![Place::var(73), Place::name(686)],
+                Place::name(0)
+            ),
+            vec![Address::new(RName(0), Offset(0))],
+            Address::new(RName(0), Offset(1)),
+            Store::from_vec(vec![(
+                RName(0),
+                Region(vec![
+                    SValue::Closure(Closure::Region(
+                        2,
+                        Term::abs(Term::abs(Term::var(0), Place::var(1)), Place::var(0)),
+                        VEnv::new(),
+                    )),
+                    SValue::Closure(Closure::Plain(
+                        Term::abs(Term::abs(Term::var(0), Place::name(686)), Place::var(73)),
+                        VEnv::new(),
+                    ))
                 ])
             )])
         );
