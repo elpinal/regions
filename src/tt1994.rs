@@ -232,14 +232,16 @@ impl VEnv {
     }
 
     pub fn get(&self, v: &Var) -> Result<&Address> {
-        self.0
-            .get(v.0)
+        let l = self.0.len();
+        l.checked_sub(v.0 + 1)
+            .and_then(|n| self.0.get(n))
             .ok_or_else(|| RError::UnboundVariable { var: v.clone() })
     }
 
     pub fn get_letrec(&self, v: &FVar) -> Result<&Address> {
-        self.0
-            .get(v.0)
+        let l = self.0.len();
+        l.checked_sub(v.0 + 1)
+            .and_then(|n| self.0.get(n))
             .ok_or_else(|| RError::UnboundLetrecVariable { var: v.clone() })
     }
 }
@@ -467,6 +469,15 @@ mod tests {
             Term::Var(Var(0)),
             vec![Address::new(RName(0), Offset(0))],
             Address::new(RName(0), Offset(0))
+        );
+
+        assert_reduce_ok!(
+            Term::Var(Var(0)),
+            vec![
+                Address::new(RName(0), Offset(0)),
+                Address::new(RName(11), Offset(9)),
+            ],
+            Address::new(RName(11), Offset(9))
         );
 
         assert_reduce_err!(
