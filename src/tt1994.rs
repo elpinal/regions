@@ -242,7 +242,7 @@ impl Store {
         self.get(&addr.region)?.get(addr.offset)
     }
 
-    fn put(&mut self, addr: Address, sv: SValue) -> () {
+    fn put(&mut self, addr: Address, sv: SValue) {
         let offset = addr.offset;
         self.0.entry(addr.region).and_modify(|r| r.put(offset, sv));
     }
@@ -283,7 +283,7 @@ impl Region {
         self.0.get(offset.0).ok_or(RError::UnboundOffset { offset })
     }
 
-    fn put(&mut self, offset: Offset, sv: SValue) -> () {
+    fn put(&mut self, offset: Offset, sv: SValue) {
         self.0.insert(offset.0, sv)
     }
 }
