@@ -246,7 +246,8 @@ impl VEnv {
     }
 }
 
-type Value = Address;
+/// A value.
+pub type Value = Address;
 
 impl Store {
     pub fn new() -> Store {
