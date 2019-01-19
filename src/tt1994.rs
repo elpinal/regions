@@ -205,6 +205,38 @@ impl Term {
     pub fn letregion(n: usize, t: Term) -> Term {
         (0..n).fold(t, |t, _| Term::LetRegion(Box::new(t)))
     }
+
+    fn abs(t: Term, p: Place) -> Term {
+        Term::Abs(Box::new(t), p)
+    }
+
+    fn app(t1: Term, t2: Term) -> Term {
+        Term::App(Box::new(t1), Box::new(t2))
+    }
+
+    fn let_(t1: Term, t2: Term) -> Term {
+        Term::Let(Box::new(t1), Box::new(t2))
+    }
+
+    fn letrec(n: usize, p: Place, t1: Term, t2: Term) -> Term {
+        Term::LetRec(n, p, Box::new(t1), Box::new(t2))
+    }
+
+    fn map<F>(self, f: &F, c: usize) -> Term
+    where
+        F: Fn(usize, Place) -> Place,
+    {
+        use Term::*;
+        match self {
+            Var(v) => Var(v),
+            Abs(t, p) => Term::abs(t.map(f, c), p),
+            App(t1, t2) => Term::app(t1.map(f, c), t2.map(f, c)),
+            Let(t1, t2) => Term::let_(t1.map(f, c), t2.map(f, c)),
+            LetRec(n, p, t1, t2) => Term::letrec(n, f(c, p), t1.map(f, c + n), t2.map(f, c)),
+            Inst(v, ps, p) => Inst(v, ps.into_iter().map(|p| f(c, p)).collect(), f(c, p)),
+            LetRegion(t) => Term::letregion(1, t.map(f, c + 1)),
+        }
+    }
 }
 
 #[cfg(test)]
