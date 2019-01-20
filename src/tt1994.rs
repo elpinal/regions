@@ -983,5 +983,21 @@ mod tests {
                 VEnv(vec![Address::new(RName(0), Offset(0))])
             ))])])
         );
+
+        assert_reduce_store_ok!(
+            Store::new(),
+            Term::letregion(1, Term::abs(Term::var(0), Place::var(0))),
+            vec![],
+            Address::new(RName(0), Offset(0)),
+            Store::new()
+        );
+
+        assert_reduce_store_ok!(
+            Store::new(),
+            Term::letregion(2, Term::abs(Term::var(0), Place::var(0))),
+            vec![],
+            Address::new(RName(1), Offset(0)),
+            Store::new()
+        );
     }
 }
