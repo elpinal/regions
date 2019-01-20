@@ -372,6 +372,23 @@ impl Region {
 
 impl Term {
     /// Creates an n-ary letregion-expression.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use regions::tt1994::Term;
+    /// use regions::tt1994::Term::*;
+    ///
+    /// assert_eq!(Term::letregion(0, Term::var(0)), Term::var(0));
+    /// assert_eq!(
+    ///     Term::letregion(1, Term::var(0)),
+    ///     LetRegion(Box::new(Term::var(0)))
+    /// );
+    /// assert_eq!(
+    ///     Term::letregion(2, Term::var(0)),
+    ///     LetRegion(Box::new(LetRegion(Box::new(Term::var(0)))))
+    /// );
+    /// ```
     pub fn letregion(n: usize, t: Term) -> Term {
         (0..n).fold(t, |t, _| Term::LetRegion(Box::new(t)))
     }
