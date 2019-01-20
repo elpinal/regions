@@ -29,10 +29,13 @@
 (def hallenberg "Niels Hallenberg")
 (def harper "Robert Harper")
 (def helsen "Simon Helsen")
+(def henglein "Fritz Henglein")
 (def jouvelot "Pierre Jouvelot")
 (def leroy "Xavier Leroy")
+(def makholm "Henning Makholm")
 (def mitchell "John C. Mitchell")
 (def moggi "Eugenio Moggi")
+(def niss "Henning Niss")
 (def talpin "Jean-Pierre Talpin")
 (def thiemann "Peter Thiemann")
 (def tofte "Mads Tofte")
@@ -114,9 +117,9 @@
     [[:i title]]))
 
 (defn book-location
-  [title & {:keys [publisher]}]
+  [title & {:keys [publisher pages]}]
   (if publisher
-    [[:i title] publisher]
+    [[:i title] (str (if pages (str "pp. " (str-pages pages) ", ")) publisher)]
     [[:i title]]))
 
 (def entries
@@ -223,6 +226,14 @@
     :location (techrpt-location :institution "IT University of Copenhagen" :number "TR-2002-18")
     :url      "http://elsman.com/mlkit/pdf/kam.pdf"}
 
+   :mak2003
+   {:title    "A language-independent framework for region inference"
+    :author   makholm
+    :date     2003
+    :month    :august
+    :location (dissertation-location :institution "University of Copenhagen" :degree "PhD")
+    :url      "http://henning.makholm.net/misc/thesis.pdf"}
+
    :tbeh2004
    {:title    "A retrospective on region-based memory management"
     :author   (authors tofte birkedal elsman hallenberg)
@@ -236,6 +247,12 @@
     :date     2004
     :location (journal-location hosc :volume 17 :number 4 :pages '(347 394))
     :url      "https://www.researchgate.net/publication/220606930_Bisimilarity_for_the_Region_Calculus"}
+
+   :hmn2005
+   {:title    "Effect types and region-based memory management"
+    :author   (authors henglein makholm niss)
+    :date     2005
+    :location (book-location "Advanced topics in types and programming languages" :publisher "MIT Press" :pages '(87 136))}
    ))
 
 (defn -main
