@@ -4,6 +4,7 @@
 
 <div><h4>Polymorphic type, region and effect inference</h4><p>Jean-Pierre Talpin and Pierre Jouvelot</p><p><i>Journal of Functional Programming</i>, 2(3), 1992</p><p>Available at <a href="https://www.irisa.fr/prive/talpin/papers/jfp92.pdf">https://www.irisa.fr/prive/talpin/papers/jfp92.pdf</a></p></div>
 <div><h4>Data region inference for polymorphic functional languages</h4><p>Mads Tofte and Jean-Pierre Talpin</p><p>Manuscript, 1992</p></div>
+<div><h4>A theory of stack allocation in polymorphically typed languages</h4><p>Mads Tofte and Jean-Pierre Talpin</p><p>University of Copenhagen, 93/15, 1993</p><p>Available at <a href="http://elsman.com/mlkit/pdf/93.15.pdf">http://elsman.com/mlkit/pdf/93.15.pdf</a></p></div>
 <div><h4>Implementation of the typed call-by-value λ-calculus using a stack of regions</h4><p>Mads Tofte and Jean-Pierre Talpin</p><p>Principles of Programming Languages, 1994</p><p>Available at <a href="http://elsman.com/mlkit/pdf/popl94.pdf">http://elsman.com/mlkit/pdf/popl94.pdf</a></p></div>
 <div><h4>Multiplicity inference</h4><p>Magnus Vejlstrup</p><p>Master thesis, University of Copenhagen, 1994</p><p>Available at <a href="http://elsman.com/mlkit/pdf/magnus.pdf">http://elsman.com/mlkit/pdf/magnus.pdf</a></p></div>
 <div><h4>From region inference to von Neumann machines via region representation inference</h4><p>Lars Birkedal, Mads Tofte and Magnus Vejlstrup</p><p>Principles of Programming Languages, 1996</p><p>Available at <a href="http://elsman.com/mlkit/pdf/popl96.pdf">http://elsman.com/mlkit/pdf/popl96.pdf</a></p></div>

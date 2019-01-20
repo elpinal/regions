@@ -137,6 +137,14 @@
     :date     1992
     :location :manuscript}
 
+   :tt1993
+   {:title    "A theory of stack allocation in polymorphically typed languages"
+    :author   (authors tofte talpin)
+    :date     1993
+    :month    :july
+    :location (techrpt-location :institution "University of Copenhagen" :number "93/15")
+    :url      "http://elsman.com/mlkit/pdf/93.15.pdf"}
+
    :tt1994
    {:title    "Implementation of the typed call-by-value λ-calculus using a stack of regions"
     :author   (authors tofte talpin)
