@@ -43,6 +43,7 @@ pub mod region {
     use std::collections::HashSet;
 
     /// A region variable.
+    #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct RegVar(usize);
 
     /// An untyped region-annotated term.
@@ -56,18 +57,22 @@ pub mod region {
     }
 
     /// An effect variable.
+    #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct EffVar(usize);
 
     /// An atomic effect.
+    #[derive(Debug, PartialEq, Eq, Hash)]
     pub enum AtEff {
         Reg(RegVar),
         Eff(EffVar),
     }
 
     /// An effect
+    #[derive(Debug, Default, PartialEq)]
     pub struct Effect(HashSet<AtEff>);
 
     /// An arrow effect.
+    #[derive(Debug, PartialEq)]
     pub struct ArrEff {
         handle: EffVar,
         latent: Effect,
@@ -84,5 +89,87 @@ pub mod region {
     pub struct PType {
         ty: Type,
         reg: RegVar,
+    }
+
+    impl AtEff {
+        fn reg(n: usize) -> Self {
+            AtEff::Reg(RegVar(n))
+        }
+
+        fn eff(n: usize) -> Self {
+            AtEff::Eff(EffVar(n))
+        }
+    }
+
+    impl Effect {
+        pub fn new() -> Self {
+            Effect(HashSet::new())
+        }
+
+        fn from_vec(v: Vec<AtEff>) -> Self {
+            Effect(v.into_iter().collect())
+        }
+    }
+
+    impl ArrEff {
+        fn new(handle: EffVar, latent: Effect) -> Self {
+            ArrEff { handle, latent }
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn test_arrow_effect_equality() {
+            assert_eq!(
+                ArrEff::new(EffVar(0), Effect::new()),
+                ArrEff::new(EffVar(0), Effect::new())
+            );
+
+            assert_eq!(
+                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
+                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)]))
+            );
+
+            assert_eq!(
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::reg(0), AtEff::eff(8)])
+                ),
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::eff(8), AtEff::reg(0)])
+                )
+            );
+
+            assert_eq!(
+                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::reg(0), AtEff::reg(0)])
+                )
+            );
+
+            assert_ne!(
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::reg(0), AtEff::eff(8)])
+                ),
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::eff(0), AtEff::reg(0)])
+                )
+            );
+
+            assert_ne!(
+                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
+                ArrEff::new(
+                    EffVar(0),
+                    Effect::from_vec(vec![AtEff::reg(0), AtEff::reg(1)])
+                )
+            );
+        }
     }
 }
