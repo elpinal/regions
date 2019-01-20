@@ -1,5 +1,9 @@
 # Regions
 
+## Implementations
+
+- `src/tt1994.rs`: the target language of Tofte and Talpin (1994)
+
 ## Incomplete Bibliography of Region-based Memory Management
 
 <div><h4>Polymorphic type, region and effect inference</h4><p>Jean-Pierre Talpin and Pierre Jouvelot</p><p><i>Journal of Functional Programming</i>, 2(3), 1992</p><p>Available at <a href="https://www.irisa.fr/prive/talpin/papers/jfp92.pdf">https://www.irisa.fr/prive/talpin/papers/jfp92.pdf</a></p></div>

@@ -266,5 +266,7 @@
 (defn -main
   []
   (write "../README.md" (str "# Regions\n\n"
+                             "## Implementations\n\n"
+                             "- `src/tt1994.rs`: the target language of Tofte and Talpin (1994)\n\n"
                              "## Incomplete Bibliography of Region-based Memory Management\n\n"
                              (html-entries (vals entries)))))
