@@ -110,7 +110,7 @@ pub mod region {
     /// A target triple.
     pub struct Triple {
         e: Box<RegExp>,
-        ty: PType,
+        ty: Box<PType>,
         eff: Effect,
     }
 
@@ -140,7 +140,7 @@ pub mod region {
     pub enum Type {
         Int,
         Var(TyVar),
-        Arrow(Box<PType>, Box<PType>),
+        Arrow(Box<PType>, ArrEff, Box<PType>),
     }
 
     /// A type with a place.
