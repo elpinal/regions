@@ -91,6 +91,34 @@ pub mod region {
                 self.latent.frv()
             }
         }
+
+        impl<'a> FRV<'a> for PType {
+            type Output = HashSet<&'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output {
+                let mut s = self.ty.frv();
+                s.insert(&self.reg);
+                s
+            }
+        }
+
+        impl<'a> FRV<'a> for Type {
+            type Output = HashSet<&'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output {
+                use Type::*;
+                match *self {
+                    Int => Default::default(),
+                    Var(_) => Default::default(),
+                    Arrow(ref pt1, ref ae, ref pt2) => {
+                        let mut s1 = pt1.frv();
+                        s1.extend(pt2.frv());
+                        s1.extend(ae.frv());
+                        s1
+                    }
+                }
+            }
+        }
     }
 
     /// A region variable.
