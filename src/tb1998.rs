@@ -106,6 +106,14 @@ pub mod region {
         reg: RegVar,
     }
 
+    /// A type scheme.
+    pub struct Scheme {
+        types: usize,
+        rvars: usize,
+        evars: usize,
+        body: Type,
+    }
+
     /// An instantiation list.
     pub struct InstList {
         types: Vec<Type>,
