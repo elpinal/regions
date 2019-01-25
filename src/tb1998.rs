@@ -72,6 +72,21 @@ pub mod region {
                 s
             }
         }
+
+        impl Basis {
+            fn fresh_reg_var(&self) -> RegVar {
+                let rvs = self.frv();
+                if !rvs.is_empty() {
+                    let len = rvs.len();
+                    for i in 0..len {
+                        if !rvs.contains(&RegVar(i)) {
+                            return RegVar(i);
+                        }
+                    }
+                }
+                RegVar(0)
+            }
+        }
     }
 
     /// A region variable.
