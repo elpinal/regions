@@ -106,6 +106,13 @@ pub mod region {
         reg: RegVar,
     }
 
+    /// An instantiation list.
+    pub struct InstList {
+        types: Vec<Type>,
+        rvars: Vec<RegVar>,
+        arr_effs: Vec<ArrEff>,
+    }
+
     impl AtEff {
         fn reg(n: usize) -> Self {
             AtEff::Reg(RegVar(n))
