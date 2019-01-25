@@ -42,6 +42,8 @@ pub mod region {
 
     use std::collections::BTreeSet;
 
+    use basis::Basis;
+
     pub mod basis {
         //! An implementation of bases.
 
@@ -61,14 +63,21 @@ pub mod region {
     #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct RegVar(usize);
 
-    /// An untyped region-annotated term.
+    /// A typed region-annotated term.
     pub enum RegExp {
         Var(Var),
-        Inst(Var, Vec<RegVar>, RegVar),
-        Abs(Box<RegExp>, RegVar),
-        App(Box<RegExp>, Box<RegExp>),
-        LetRec(usize, RegVar, Box<RegExp>, Box<RegExp>),
-        LetRegion(Box<RegExp>),
+        Inst(Var, InstList, RegVar),
+        Abs(PType, Triple),
+        App(Triple, Triple),
+        LetRec(Scheme, RegVar, Triple, Triple),
+        LetRegion(Basis, Triple),
+    }
+
+    /// A target triple.
+    pub struct Triple {
+        e: Box<RegExp>,
+        ty: PType,
+        eff: Effect,
     }
 
     /// An effect variable.
