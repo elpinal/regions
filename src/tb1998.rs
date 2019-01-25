@@ -41,6 +41,7 @@ pub mod region {
     use super::*;
 
     use std::collections::BTreeSet;
+    use std::collections::HashSet;
 
     use basis::Basis;
 
@@ -56,56 +57,6 @@ pub mod region {
         pub struct Basis {
             q: HashSet<RegVar>,
             e: BTreeSet<ArrEff>,
-        }
-
-        /// Free region variables.
-        pub trait FRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
-            fn frv(&'a self) -> Output;
-        }
-
-        impl<'a> FRV<'a> for AtEff {
-            fn frv(&self) -> HashSet<&RegVar> {
-                match *self {
-                    AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
-                    AtEff::Eff(_) => Default::default(),
-                }
-            }
-        }
-
-        impl<'a> FRV<'a> for Effect {
-            fn frv(&self) -> HashSet<&RegVar> {
-                self.0.iter().map(|a| a.frv()).flatten().collect()
-            }
-        }
-
-        impl<'a> FRV<'a> for ArrEff {
-            fn frv(&self) -> HashSet<&RegVar> {
-                self.latent.frv()
-            }
-        }
-
-        impl<'a> FRV<'a> for PType {
-            fn frv(&self) -> HashSet<&RegVar> {
-                let mut s = self.ty.frv();
-                s.insert(&self.reg);
-                s
-            }
-        }
-
-        impl<'a> FRV<'a> for Type {
-            fn frv(&self) -> HashSet<&RegVar> {
-                use Type::*;
-                match *self {
-                    Int => Default::default(),
-                    Var(_) => Default::default(),
-                    Arrow(ref pt1, ref ae, ref pt2) => {
-                        let mut s1 = pt1.frv();
-                        s1.extend(pt2.frv());
-                        s1.extend(ae.frv());
-                        s1
-                    }
-                }
-            }
         }
 
         impl<'a> FRV<'a> for BTreeSet<ArrEff> {
@@ -192,6 +143,56 @@ pub mod region {
         types: Vec<Type>,
         rvars: Vec<RegVar>,
         arr_effs: Vec<ArrEff>,
+    }
+
+    /// Free region variables.
+    pub trait FRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
+        fn frv(&'a self) -> Output;
+    }
+
+    impl<'a> FRV<'a> for AtEff {
+        fn frv(&self) -> HashSet<&RegVar> {
+            match *self {
+                AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
+                AtEff::Eff(_) => Default::default(),
+            }
+        }
+    }
+
+    impl<'a> FRV<'a> for Effect {
+        fn frv(&self) -> HashSet<&RegVar> {
+            self.0.iter().map(|a| a.frv()).flatten().collect()
+        }
+    }
+
+    impl<'a> FRV<'a> for ArrEff {
+        fn frv(&self) -> HashSet<&RegVar> {
+            self.latent.frv()
+        }
+    }
+
+    impl<'a> FRV<'a> for PType {
+        fn frv(&self) -> HashSet<&RegVar> {
+            let mut s = self.ty.frv();
+            s.insert(&self.reg);
+            s
+        }
+    }
+
+    impl<'a> FRV<'a> for Type {
+        fn frv(&self) -> HashSet<&RegVar> {
+            use Type::*;
+            match *self {
+                Int => Default::default(),
+                Var(_) => Default::default(),
+                Arrow(ref pt1, ref ae, ref pt2) => {
+                    let mut s1 = pt1.frv();
+                    s1.extend(pt2.frv());
+                    s1.extend(ae.frv());
+                    s1
+                }
+            }
+        }
     }
 
     impl AtEff {
