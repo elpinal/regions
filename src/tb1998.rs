@@ -64,7 +64,7 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for AtEff {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 match *self {
                     AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
                     AtEff::Eff(_) => Default::default(),
@@ -73,19 +73,19 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for Effect {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 self.0.iter().map(|a| a.frv()).flatten().collect()
             }
         }
 
         impl<'a> FRV<'a> for ArrEff {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 self.latent.frv()
             }
         }
 
         impl<'a> FRV<'a> for PType {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 let mut s = self.ty.frv();
                 s.insert(&self.reg);
                 s
@@ -93,7 +93,7 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for Type {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 use Type::*;
                 match *self {
                     Int => Default::default(),
@@ -109,13 +109,13 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for BTreeSet<ArrEff> {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 self.iter().map(|ae| ae.frv()).flatten().collect()
             }
         }
 
         impl<'a> FRV<'a> for Basis {
-            fn frv(&'a self) -> HashSet<&'a RegVar> {
+            fn frv(&self) -> HashSet<&RegVar> {
                 let mut s = self.e.frv();
                 s.extend(&self.q);
                 s
