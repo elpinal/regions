@@ -40,24 +40,25 @@ pub mod ml {
 pub mod region {
     use super::*;
 
-    use std::collections::HashSet;
+    use std::collections::BTreeSet;
 
     pub mod basis {
         //! An implementation of bases.
 
         use super::*;
 
+        use std::collections::BTreeSet;
         use std::collections::HashSet;
 
         /// A basis.
         pub struct Basis {
             q: HashSet<RegVar>,
-            e: HashSet<ArrEff>,
+            e: BTreeSet<ArrEff>,
         }
     }
 
     /// A region variable.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct RegVar(usize);
 
     /// An untyped region-annotated term.
@@ -71,22 +72,22 @@ pub mod region {
     }
 
     /// An effect variable.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct EffVar(usize);
 
     /// An atomic effect.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub enum AtEff {
         Reg(RegVar),
         Eff(EffVar),
     }
 
     /// An effect
-    #[derive(Debug, Default, PartialEq)]
-    pub struct Effect(HashSet<AtEff>);
+    #[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+    pub struct Effect(BTreeSet<AtEff>);
 
     /// An arrow effect.
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
     pub struct ArrEff {
         handle: EffVar,
         latent: Effect,
@@ -117,7 +118,7 @@ pub mod region {
 
     impl Effect {
         pub fn new() -> Self {
-            Effect(HashSet::new())
+            Effect(BTreeSet::new())
         }
 
         fn from_vec(v: Vec<AtEff>) -> Self {
