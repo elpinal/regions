@@ -107,6 +107,20 @@ pub mod region {
                 }
             }
         }
+
+        impl<'a> FRV<'a> for BTreeSet<ArrEff> {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
+                self.iter().map(|ae| ae.frv()).flatten().collect()
+            }
+        }
+
+        impl<'a> FRV<'a> for Basis {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
+                let mut s = self.e.frv();
+                s.extend(&self.q);
+                s
+            }
+        }
     }
 
     /// A region variable.
