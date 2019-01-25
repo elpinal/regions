@@ -57,6 +57,40 @@ pub mod region {
             q: HashSet<RegVar>,
             e: BTreeSet<ArrEff>,
         }
+
+        /// Free region variables.
+        pub trait FRV<'a> {
+            type Output: IntoIterator<Item = &'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output;
+        }
+
+        impl<'a> FRV<'a> for AtEff {
+            type Output = HashSet<&'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output {
+                match *self {
+                    AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
+                    AtEff::Eff(_) => Default::default(),
+                }
+            }
+        }
+
+        impl<'a> FRV<'a> for Effect {
+            type Output = HashSet<&'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output {
+                self.0.iter().map(|a| a.frv()).flatten().collect()
+            }
+        }
+
+        impl<'a> FRV<'a> for ArrEff {
+            type Output = HashSet<&'a RegVar>;
+
+            fn frv(&'a self) -> Self::Output {
+                self.latent.frv()
+            }
+        }
     }
 
     /// A region variable.
