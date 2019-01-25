@@ -59,16 +59,12 @@ pub mod region {
         }
 
         /// Free region variables.
-        pub trait FRV<'a> {
-            type Output: IntoIterator<Item = &'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output;
+        pub trait FRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
+            fn frv(&'a self) -> Output;
         }
 
         impl<'a> FRV<'a> for AtEff {
-            type Output = HashSet<&'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
                 match *self {
                     AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
                     AtEff::Eff(_) => Default::default(),
@@ -77,25 +73,19 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for Effect {
-            type Output = HashSet<&'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
                 self.0.iter().map(|a| a.frv()).flatten().collect()
             }
         }
 
         impl<'a> FRV<'a> for ArrEff {
-            type Output = HashSet<&'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
                 self.latent.frv()
             }
         }
 
         impl<'a> FRV<'a> for PType {
-            type Output = HashSet<&'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
                 let mut s = self.ty.frv();
                 s.insert(&self.reg);
                 s
@@ -103,9 +93,7 @@ pub mod region {
         }
 
         impl<'a> FRV<'a> for Type {
-            type Output = HashSet<&'a RegVar>;
-
-            fn frv(&'a self) -> Self::Output {
+            fn frv(&'a self) -> HashSet<&'a RegVar> {
                 use Type::*;
                 match *self {
                     Int => Default::default(),
