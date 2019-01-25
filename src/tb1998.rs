@@ -42,6 +42,20 @@ pub mod region {
 
     use std::collections::HashSet;
 
+    pub mod basis {
+        //! An implementation of bases.
+
+        use super::*;
+
+        use std::collections::HashSet;
+
+        /// A basis.
+        pub struct Basis {
+            q: HashSet<RegVar>,
+            e: HashSet<ArrEff>,
+        }
+    }
+
     /// A region variable.
     #[derive(Debug, PartialEq, Eq, Hash)]
     pub struct RegVar(usize);
