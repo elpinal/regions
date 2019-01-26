@@ -332,8 +332,7 @@ pub mod region {
         fn frv(&self) -> HashSet<&RegVar> {
             use Type::*;
             match *self {
-                Int => Default::default(),
-                Var(_) => Default::default(),
+                Int | Var(_) => Default::default(),
                 Arrow(ref pt1, ref ae, ref pt2) => {
                     let mut s1 = pt1.frv();
                     s1.extend(pt2.frv());
@@ -348,8 +347,7 @@ pub mod region {
         fn fev(&self) -> HashSet<&EffVar> {
             use Type::*;
             match *self {
-                Int => Default::default(),
-                Var(_) => Default::default(),
+                Int | Var(_) => Default::default(),
                 Arrow(ref pt1, ref ae, ref pt2) => {
                     let mut s1 = pt1.fev();
                     s1.extend(pt2.fev());
