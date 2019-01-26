@@ -111,6 +111,19 @@ pub mod region {
                 }
                 RegVar(0)
             }
+
+            fn fresh_eff_var(&self) -> EffVar {
+                let evs = self.fev();
+                if !evs.is_empty() {
+                    let len = evs.len();
+                    for i in 0..=len {
+                        if !evs.contains(&EffVar(i)) {
+                            return EffVar(i);
+                        }
+                    }
+                }
+                EffVar(0)
+            }
         }
 
         #[cfg(test)]
@@ -184,6 +197,75 @@ pub mod region {
                     )
                     .fresh_reg_var(),
                     RegVar(1)
+                );
+            }
+
+            #[test]
+            fn fresh_eff_var() {
+                assert_eq!(Basis::default().fresh_eff_var(), EffVar(0));
+                assert_eq!(Basis::new(vec![RegVar(0)], None).fresh_eff_var(), EffVar(0));
+                assert_eq!(Basis::new(vec![RegVar(1)], None).fresh_eff_var(), EffVar(0));
+                assert_eq!(
+                    Basis::new(vec![RegVar(0), RegVar(1)], None).fresh_eff_var(),
+                    EffVar(0)
+                );
+                assert_eq!(
+                    Basis::new(None, vec![ArrEff::new(EffVar(0), Effect::new())]).fresh_eff_var(),
+                    EffVar(1)
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0)],
+                        vec![ArrEff::new(
+                            EffVar(0),
+                            Effect::from_iter(vec![
+                                AtEff::eff(1),
+                                AtEff::eff(2),
+                                AtEff::eff(3),
+                                AtEff::reg(4),
+                                AtEff::reg(5),
+                                AtEff::eff(6),
+                            ])
+                        )]
+                    )
+                    .fresh_eff_var(),
+                    EffVar(4)
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0)],
+                        vec![ArrEff::new(
+                            EffVar(1),
+                            Effect::from_iter(vec![
+                                AtEff::eff(1),
+                                AtEff::eff(3),
+                                AtEff::reg(4),
+                                AtEff::eff(6),
+                            ])
+                        )]
+                    )
+                    .fresh_eff_var(),
+                    EffVar(0)
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0), RegVar(4)],
+                        vec![ArrEff::new(
+                            EffVar(1),
+                            Effect::from_iter(vec![
+                                AtEff::eff(1),
+                                AtEff::eff(3),
+                                AtEff::reg(2),
+                                AtEff::eff(6),
+                                AtEff::eff(0),
+                            ])
+                        )]
+                    )
+                    .fresh_eff_var(),
+                    EffVar(2)
                 );
             }
         }
