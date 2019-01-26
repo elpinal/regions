@@ -195,6 +195,17 @@ impl Basis {
             e: ArrEffSet(self.e.0.union(&another.e.0).cloned().collect()),
         }
     }
+
+    fn disjoint_union(&self, another: &Basis) -> Option<Basis> {
+        let u = self.union(another);
+        if u.is_consistent()
+            && self.q.is_disjoint(&another.q)
+            && self.e.domain().is_disjoint(&another.e.domain())
+        {
+            return Some(u);
+        }
+        None
+    }
 }
 
 #[cfg(test)]
