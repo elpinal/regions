@@ -55,6 +55,7 @@ pub mod region {
         use std::collections::HashSet;
 
         /// A basis.
+        #[derive(Default)]
         pub struct Basis {
             q: HashSet<RegVar>,
             e: BTreeSet<ArrEff>,
@@ -75,17 +76,103 @@ pub mod region {
         }
 
         impl Basis {
+            fn new<Q, E>(q: Q, e: E) -> Self
+            where
+                Q: IntoIterator<Item = RegVar>,
+                E: IntoIterator<Item = ArrEff>,
+            {
+                Basis {
+                    q: q.into_iter().collect(),
+                    e: e.into_iter().collect(),
+                }
+            }
+
             fn fresh_reg_var(&self) -> RegVar {
                 let rvs = self.frv();
                 if !rvs.is_empty() {
                     let len = rvs.len();
-                    for i in 0..len {
+                    for i in 0..=len {
                         if !rvs.contains(&RegVar(i)) {
                             return RegVar(i);
                         }
                     }
                 }
                 RegVar(0)
+            }
+        }
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn basis_frv() {
+                assert_eq!(Basis::default().frv(), HashSet::new());
+
+                assert_eq!(
+                    Basis::new(vec![RegVar(0)], None).frv(),
+                    vec![&RegVar(0)].into_iter().collect()
+                );
+
+                assert_eq!(
+                    Basis::new(vec![RegVar(0)], vec![ArrEff::new(EffVar(0), Effect::new())]).frv(),
+                    vec![&RegVar(0)].into_iter().collect()
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0)],
+                        vec![ArrEff::new(
+                            EffVar(0),
+                            Effect::from_iter(vec![AtEff::reg(3)])
+                        )]
+                    )
+                    .frv(),
+                    vec![&RegVar(0), &RegVar(3)].into_iter().collect()
+                );
+            }
+
+            #[test]
+            fn fresh_reg_var() {
+                assert_eq!(Basis::default().fresh_reg_var(), RegVar(0));
+                assert_eq!(Basis::new(vec![RegVar(0)], None).fresh_reg_var(), RegVar(1));
+                assert_eq!(Basis::new(vec![RegVar(1)], None).fresh_reg_var(), RegVar(0));
+                assert_eq!(
+                    Basis::new(vec![RegVar(0), RegVar(1)], None).fresh_reg_var(),
+                    RegVar(2)
+                );
+                assert_eq!(
+                    Basis::new(vec![RegVar(0), RegVar(1), RegVar(2)], None).fresh_reg_var(),
+                    RegVar(3)
+                );
+                assert_eq!(
+                    Basis::new(vec![RegVar(0), RegVar(1), RegVar(3)], None).fresh_reg_var(),
+                    RegVar(2)
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0), RegVar(1), RegVar(3)],
+                        vec![ArrEff::new(
+                            EffVar(4),
+                            Effect::from_iter(vec![AtEff::reg(2)])
+                        )]
+                    )
+                    .fresh_reg_var(),
+                    RegVar(4)
+                );
+
+                assert_eq!(
+                    Basis::new(
+                        vec![RegVar(0), RegVar(4), RegVar(3)],
+                        vec![ArrEff::new(
+                            EffVar(4),
+                            Effect::from_iter(vec![AtEff::reg(2)])
+                        )]
+                    )
+                    .fresh_reg_var(),
+                    RegVar(1)
+                );
             }
         }
     }
