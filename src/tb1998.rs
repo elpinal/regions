@@ -56,7 +56,7 @@ pub mod region {
 
         /// A set of arrow effects.
         #[derive(Default)]
-        struct ArrEffSet(BTreeSet<ArrEff>);
+        pub struct ArrEffSet(BTreeSet<ArrEff>);
 
         /// A basis.
         #[derive(Default)]
@@ -92,7 +92,8 @@ pub mod region {
         }
 
         impl ArrEffSet {
-            fn get_effect_map(&self) -> Option<HashMap<&EffVar, &Effect>> {
+            /// Gets the effect map of a *functional* set of arrow effects.
+            pub fn get_effect_map(&self) -> Option<HashMap<&EffVar, &Effect>> {
                 let mut m = HashMap::new();
                 for ae in self.0.iter() {
                     if m.insert(&ae.handle, &ae.latent).is_some() {
