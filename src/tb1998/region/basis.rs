@@ -119,6 +119,10 @@ impl ArrEffSet {
         }
         true
     }
+
+    fn is_consistent(&self) -> bool {
+        self.is_functional() && self.is_closed() && self.is_transitive()
+    }
 }
 
 impl Basis {
@@ -157,6 +161,10 @@ impl Basis {
             }
         }
         EffVar(0)
+    }
+
+    fn is_consistent(&self) -> bool {
+        self.e.frv().is_subset(&self.q.iter().collect()) && self.e.is_consistent()
     }
 }
 
