@@ -328,49 +328,36 @@ pub mod region {
 
             #[test]
             fn is_functional() {
-                assert_eq!(ArrEffSet::default().is_functional(), true);
+                assert!(ArrEffSet::default().is_functional());
 
-                assert_eq!(
+                assert!(
                     ArrEffSet::from_iter(vec![ArrEff::new(EffVar(0), Effect::default())])
-                        .is_functional(),
-                    true
+                        .is_functional()
                 );
 
-                assert_eq!(
-                    ArrEffSet::from_iter(vec![
-                        ArrEff::new(EffVar(0), Effect::default()),
-                        ArrEff::new(EffVar(0), Effect::default())
-                    ])
-                    .is_functional(),
-                    true
-                );
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::default()),
+                    ArrEff::new(EffVar(0), Effect::default())
+                ])
+                .is_functional());
 
-                assert_eq!(
-                    ArrEffSet::from_iter(vec![
-                        ArrEff::new(EffVar(0), Effect::default()),
-                        ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)]))
-                    ])
-                    .is_functional(),
-                    false
-                );
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::default()),
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)]))
+                ])
+                .is_functional());
 
-                assert_eq!(
-                    ArrEffSet::from_iter(vec![
-                        ArrEff::new(EffVar(0), Effect::default()),
-                        ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::reg(0)]))
-                    ])
-                    .is_functional(),
-                    true
-                );
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::default()),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::reg(0)]))
+                ])
+                .is_functional());
 
-                assert_eq!(
-                    ArrEffSet::from_iter(vec![
-                        ArrEff::new(EffVar(6), Effect::from_iter(vec![AtEff::reg(0)])),
-                        ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::reg(0)]))
-                    ])
-                    .is_functional(),
-                    true
-                );
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(6), Effect::from_iter(vec![AtEff::reg(0)])),
+                    ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::reg(0)]))
+                ])
+                .is_functional());
             }
         }
     }
