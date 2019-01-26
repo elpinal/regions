@@ -124,6 +124,10 @@ pub mod region {
                 }
                 Ok(m)
             }
+
+            fn is_functional(&self) -> bool {
+                self.get_effect_map().is_ok()
+            }
         }
 
         impl Basis {
@@ -305,6 +309,53 @@ pub mod region {
                     )
                     .fresh_eff_var(),
                     EffVar(2)
+                );
+            }
+
+            #[test]
+            fn is_functional() {
+                assert_eq!(ArrEffSet::default().is_functional(), true);
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![ArrEff::new(EffVar(0), Effect::default())])
+                        .is_functional(),
+                    true
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![
+                        ArrEff::new(EffVar(0), Effect::default()),
+                        ArrEff::new(EffVar(0), Effect::default())
+                    ])
+                    .is_functional(),
+                    true
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![
+                        ArrEff::new(EffVar(0), Effect::default()),
+                        ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)]))
+                    ])
+                    .is_functional(),
+                    false
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![
+                        ArrEff::new(EffVar(0), Effect::default()),
+                        ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::reg(0)]))
+                    ])
+                    .is_functional(),
+                    true
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![
+                        ArrEff::new(EffVar(6), Effect::from_iter(vec![AtEff::reg(0)])),
+                        ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::reg(0)]))
+                    ])
+                    .is_functional(),
+                    true
                 );
             }
         }
