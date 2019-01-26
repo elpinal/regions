@@ -360,6 +360,7 @@ pub mod region {
                 .is_functional());
             }
 
+            #[test]
             fn is_closed() {
                 assert!(ArrEffSet::default().is_closed());
 
