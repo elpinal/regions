@@ -67,11 +67,23 @@ pub mod region {
             }
         }
 
+        impl<'a> FEV<'a> for BTreeSet<ArrEff> {
+            fn fev(&self) -> HashSet<&EffVar> {
+                self.iter().map(|ae| ae.fev()).flatten().collect()
+            }
+        }
+
         impl<'a> FRV<'a> for Basis {
             fn frv(&self) -> HashSet<&RegVar> {
                 let mut s = self.e.frv();
                 s.extend(&self.q);
                 s
+            }
+        }
+
+        impl<'a> FEV<'a> for Basis {
+            fn fev(&self) -> HashSet<&EffVar> {
+                self.e.fev()
             }
         }
 
@@ -253,11 +265,25 @@ pub mod region {
         fn frv(&'a self) -> Output;
     }
 
+    /// Free effect variables.
+    pub trait FEV<'a, Output: IntoIterator<Item = &'a EffVar> = HashSet<&'a EffVar>> {
+        fn fev(&'a self) -> Output;
+    }
+
     impl<'a> FRV<'a> for AtEff {
         fn frv(&self) -> HashSet<&RegVar> {
             match *self {
                 AtEff::Reg(ref rv) => Some(rv).into_iter().collect(),
                 AtEff::Eff(_) => Default::default(),
+            }
+        }
+    }
+
+    impl<'a> FEV<'a> for AtEff {
+        fn fev(&self) -> HashSet<&EffVar> {
+            match *self {
+                AtEff::Reg(_) => Default::default(),
+                AtEff::Eff(ref ev) => Some(ev).into_iter().collect(),
             }
         }
     }
@@ -268,9 +294,23 @@ pub mod region {
         }
     }
 
+    impl<'a> FEV<'a> for Effect {
+        fn fev(&self) -> HashSet<&EffVar> {
+            self.0.iter().map(|a| a.fev()).flatten().collect()
+        }
+    }
+
     impl<'a> FRV<'a> for ArrEff {
         fn frv(&self) -> HashSet<&RegVar> {
             self.latent.frv()
+        }
+    }
+
+    impl<'a> FEV<'a> for ArrEff {
+        fn fev(&self) -> HashSet<&EffVar> {
+            let mut s = self.latent.fev();
+            s.insert(&self.handle);
+            s
         }
     }
 
@@ -279,6 +319,12 @@ pub mod region {
             let mut s = self.ty.frv();
             s.insert(&self.reg);
             s
+        }
+    }
+
+    impl<'a> FEV<'a> for PType {
+        fn fev(&self) -> HashSet<&EffVar> {
+            self.ty.fev()
         }
     }
 
@@ -292,6 +338,22 @@ pub mod region {
                     let mut s1 = pt1.frv();
                     s1.extend(pt2.frv());
                     s1.extend(ae.frv());
+                    s1
+                }
+            }
+        }
+    }
+
+    impl<'a> FEV<'a> for Type {
+        fn fev(&self) -> HashSet<&EffVar> {
+            use Type::*;
+            match *self {
+                Int => Default::default(),
+                Var(_) => Default::default(),
+                Arrow(ref pt1, ref ae, ref pt2) => {
+                    let mut s1 = pt1.fev();
+                    s1.extend(pt2.fev());
+                    s1.extend(ae.fev());
                     s1
                 }
             }
