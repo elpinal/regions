@@ -54,22 +54,26 @@ pub mod region {
         use std::collections::BTreeSet;
         use std::collections::HashSet;
 
+        /// A set of arrow effects.
+        #[derive(Default)]
+        struct ArrEffSet(BTreeSet<ArrEff>);
+
         /// A basis.
         #[derive(Default)]
         pub struct Basis {
             q: HashSet<RegVar>,
-            e: BTreeSet<ArrEff>,
+            e: ArrEffSet,
         }
 
-        impl<'a> FRV<'a> for BTreeSet<ArrEff> {
+        impl<'a> FRV<'a> for ArrEffSet {
             fn frv(&self) -> HashSet<&RegVar> {
-                self.iter().map(|ae| ae.frv()).flatten().collect()
+                self.0.iter().map(|ae| ae.frv()).flatten().collect()
             }
         }
 
-        impl<'a> FEV<'a> for BTreeSet<ArrEff> {
+        impl<'a> FEV<'a> for ArrEffSet {
             fn fev(&self) -> HashSet<&EffVar> {
-                self.iter().map(|ae| ae.fev()).flatten().collect()
+                self.0.iter().map(|ae| ae.fev()).flatten().collect()
             }
         }
 
@@ -95,7 +99,7 @@ pub mod region {
             {
                 Basis {
                     q: q.into_iter().collect(),
-                    e: e.into_iter().collect(),
+                    e: ArrEffSet(e.into_iter().collect()),
                 }
             }
 
