@@ -40,6 +40,7 @@ pub mod ml {
 pub mod region {
     use super::*;
 
+    use std::collections::btree_set;
     use std::collections::BTreeSet;
     use std::collections::HashSet;
     use std::iter::FromIterator;
@@ -127,6 +128,19 @@ pub mod region {
 
             fn is_functional(&self) -> bool {
                 self.get_effect_map().is_ok()
+            }
+
+            fn is_closed(&self) -> bool {
+                for ae in self.0.iter() {
+                    for eff in ae.latent.iter() {
+                        if let AtEff::Eff(ref ev) = *eff {
+                            if !self.0.iter().any(|ae| &ae.handle == ev) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                true
             }
         }
 
@@ -549,6 +563,10 @@ pub mod region {
     impl Effect {
         pub fn new() -> Self {
             Effect(BTreeSet::new())
+        }
+
+        fn iter(&self) -> btree_set::Iter<AtEff> {
+            self.0.iter()
         }
     }
 
