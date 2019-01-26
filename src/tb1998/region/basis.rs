@@ -8,11 +8,11 @@ use std::collections::{HashMap, HashSet};
 use failure::Fail;
 
 /// A set of arrow effects.
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ArrEffSet(BTreeSet<ArrEff>);
 
 /// A basis.
-#[derive(Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Basis {
     q: HashSet<RegVar>,
     e: ArrEffSet,
@@ -213,6 +213,10 @@ mod tests {
     #![warn(dead_code)]
 
     use super::*;
+
+    use quickcheck::quickcheck;
+    use quickcheck::Arbitrary;
+    use quickcheck::Gen;
 
     #[test]
     fn basis_frv() {
@@ -673,5 +677,249 @@ mod tests {
             ),
         ])
         .is_transitive());
+    }
+
+    #[test]
+    fn union_closed() {
+        assert!(!Basis::new(
+            vec![RegVar(0)],
+            vec![ArrEff::new(
+                EffVar(0),
+                Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(999), AtEff::eff(1)])
+            )]
+        )
+        .union(&Basis::new(
+            vec![RegVar(88)],
+            vec![ArrEff::new(
+                EffVar(1),
+                Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(1)])
+            )]
+        ))
+        .e
+        .is_closed());
+
+        assert!(Basis::new(
+            vec![RegVar(0)],
+            vec![ArrEff::new(
+                EffVar(0),
+                Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(999), AtEff::eff(1)])
+            )]
+        )
+        .union(&Basis::new(
+            vec![RegVar(88)],
+            vec![
+                ArrEff::new(
+                    EffVar(1),
+                    Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(1)])
+                ),
+                ArrEff::new(EffVar(999), Effect::default()),
+            ]
+        ))
+        .e
+        .is_closed());
+    }
+
+    impl Arbitrary for RegVar {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            RegVar(usize::arbitrary(g))
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.shrink().map(RegVar))
+        }
+    }
+
+    impl Arbitrary for EffVar {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            EffVar(usize::arbitrary(g))
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.shrink().map(EffVar))
+        }
+    }
+
+    impl Arbitrary for AtEff {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            use rand::Rng;
+            if g.gen() {
+                AtEff::eff(Arbitrary::arbitrary(g))
+            } else {
+                AtEff::reg(Arbitrary::arbitrary(g))
+            }
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            use AtEff::*;
+            match *self {
+                Eff(ref x) => Box::new(x.shrink().map(Eff)),
+                Reg(ref x) => Box::new(x.shrink().map(Reg)),
+            }
+        }
+    }
+
+    impl Arbitrary for Effect {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            Effect(Arbitrary::arbitrary(g))
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.shrink().map(Effect))
+        }
+    }
+
+    impl Arbitrary for ArrEff {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            ArrEff {
+                handle: Arbitrary::arbitrary(g),
+                latent: Arbitrary::arbitrary(g),
+            }
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(
+                (self.handle.clone(), self.latent.clone())
+                    .shrink()
+                    .map(|(handle, latent)| ArrEff { handle, latent }),
+            )
+        }
+    }
+
+    impl Arbitrary for ArrEffSet {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            ArrEffSet(Arbitrary::arbitrary(g))
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.shrink().map(ArrEffSet))
+        }
+    }
+
+    impl Arbitrary for Basis {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            Basis {
+                q: Arbitrary::arbitrary(g),
+                e: Arbitrary::arbitrary(g),
+            }
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(
+                (self.q.clone(), self.e.clone())
+                    .shrink()
+                    .map(|(q, e)| Basis { q, e }),
+            )
+        }
+    }
+
+    quickcheck! {
+        fn prop_disjoint_union_right_empty(b: Basis) -> bool {
+            b.disjoint_union(&Basis::default()).map_or(true, |b0| b0 == b)
+        }
+    }
+
+    #[test]
+    fn disjoint_union() {
+        assert_eq!(
+            Basis::default().disjoint_union(&Basis::default()),
+            Some(Basis::default())
+        );
+
+        assert_eq!(
+            Basis::new(vec![RegVar(0)], None).disjoint_union(&Basis::default()),
+            Some(Basis::new(vec![RegVar(0)], None))
+        );
+
+        assert_eq!(
+            Basis::new(
+                None,
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::Eff(EffVar(1))])
+                )]
+            )
+            .disjoint_union(&Basis::default()),
+            None
+        );
+
+        assert_eq!(
+            Basis::new(
+                None,
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::Eff(EffVar(1))])
+                )]
+            )
+            .disjoint_union(&Basis::new(
+                None,
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::Eff(EffVar(1))])
+                )]
+            )),
+            None
+        );
+
+        assert_eq!(
+            Basis::new(
+                None,
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::Eff(EffVar(1))])
+                )]
+            )
+            .disjoint_union(&Basis::new(
+                None,
+                vec![ArrEff::new(
+                    EffVar(1),
+                    Effect::from_iter(vec![AtEff::Eff(EffVar(1))])
+                )]
+            )),
+            Some(Basis::new(
+                None,
+                vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::Eff(EffVar(1))])),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::Eff(EffVar(1))])),
+                ]
+            ))
+        );
+
+        assert_eq!(
+            Basis::new(
+                vec![RegVar(0)],
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(999), AtEff::eff(1)])
+                )]
+            )
+            .disjoint_union(&Basis::new(
+                vec![RegVar(88)],
+                vec![
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::reg(88), AtEff::eff(1)])
+                    ),
+                    ArrEff::new(EffVar(999), Effect::default()),
+                ]
+            )),
+            Some(Basis::new(
+                vec![RegVar(0), RegVar(88)],
+                vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![
+                            AtEff::reg(88),
+                            AtEff::eff(999),
+                            AtEff::Eff(EffVar(1))
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::reg(88), AtEff::Eff(EffVar(1))])
+                    ),
+                    ArrEff::new(EffVar(999), Effect::default()),
+                ]
+            ))
+        );
     }
 }
