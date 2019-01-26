@@ -54,6 +54,8 @@ pub mod region {
         use std::collections::BTreeSet;
         use std::collections::{HashMap, HashSet};
 
+        use failure::Fail;
+
         /// A set of arrow effects.
         #[derive(Default)]
         pub struct ArrEffSet(BTreeSet<ArrEff>);
@@ -91,16 +93,25 @@ pub mod region {
             }
         }
 
+        /// Detects a not *functional* set of arrow effects.
+        #[derive(Fail, Debug)]
+        #[fail(display = "not functional: duplicate effect variable: {:?}", duplicate)]
+        pub struct NotFunctionalError {
+            duplicate: EffVar,
+        }
+
         impl ArrEffSet {
             /// Gets the effect map of a *functional* set of arrow effects.
-            pub fn get_effect_map(&self) -> Option<HashMap<&EffVar, &Effect>> {
+            pub fn get_effect_map(&self) -> Result<HashMap<&EffVar, &Effect>, NotFunctionalError> {
                 let mut m = HashMap::new();
                 for ae in self.0.iter() {
                     if m.insert(&ae.handle, &ae.latent).is_some() {
-                        return None;
+                        return Err(NotFunctionalError {
+                            duplicate: ae.handle.clone(),
+                        });
                     }
                 }
-                Some(m)
+                Ok(m)
             }
         }
 
@@ -310,7 +321,7 @@ pub mod region {
     }
 
     /// An effect variable.
-    #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    #[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct EffVar(usize);
 
     /// An atomic effect.
