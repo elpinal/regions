@@ -626,6 +626,15 @@ pub mod region {
         }
     }
 
+    impl<'a> From<&'a AtEff> for Option<&'a EffVar> {
+        fn from(ae: &'a AtEff) -> Self {
+            match *ae {
+                AtEff::Eff(ref ev) => Some(ev),
+                _ => None,
+            }
+        }
+    }
+
     impl AtEff {
         fn reg(n: usize) -> Self {
             AtEff::Reg(RegVar(n))
