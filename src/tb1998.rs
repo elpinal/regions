@@ -156,6 +156,19 @@ pub mod region {
                 }
                 true
             }
+
+            fn is_transitive(&self) -> bool {
+                for ae in self.0.iter() {
+                    let f: fn(&AtEff) -> Option<&EffVar> = |ae: &AtEff| ae.into();
+                    let evs = ae.latent.iter().map(f).flatten();
+                    for ev in evs {
+                        if !self.get(ev).is_subset(&ae.latent.0.iter().collect()) {
+                            return false;
+                        }
+                    }
+                }
+                true
+            }
         }
 
         impl Basis {
@@ -494,6 +507,180 @@ pub mod region {
                     .get(&EffVar(0)),
                     BTreeSet::from_iter(vec![&AtEff::eff(1), &AtEff::eff(2)])
                 );
+            }
+
+            #[test]
+            fn is_transitive() {
+                assert!(ArrEffSet::default().is_transitive());
+
+                assert!(
+                    ArrEffSet::from_iter(vec![ArrEff::new(EffVar(0), Effect::default())])
+                        .is_transitive()
+                );
+
+                assert!(ArrEffSet::from_iter(vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::eff(0)])
+                )])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::eff(0), AtEff::eff(1)])
+                )])
+                .is_transitive());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(0)])),
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(0), AtEff::eff(1)])
+                    )
+                ])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::eff(0)])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::eff(0), AtEff::eff(1)])
+                    )
+                ])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(1)]))
+                ])
+                .is_transitive());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(2)])),
+                    ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::eff(3)])),
+                ])
+                .is_transitive());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::eff(2), AtEff::eff(3)])
+                    ),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(2)])),
+                    ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::eff(3)])),
+                ])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::eff(2), AtEff::eff(3)])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::eff(2), AtEff::eff(3)])
+                    ),
+                    ArrEff::new(EffVar(2), Effect::from_iter(vec![AtEff::eff(3)])),
+                ])
+                .is_transitive());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::eff(2), AtEff::eff(3)])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::eff(2), AtEff::eff(3)])
+                    ),
+                    ArrEff::new(
+                        EffVar(2),
+                        Effect::from_iter(vec![AtEff::eff(3), AtEff::reg(88)])
+                    ),
+                ])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![
+                            AtEff::eff(1),
+                            AtEff::eff(2),
+                            AtEff::eff(3),
+                            AtEff::reg(88),
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![AtEff::eff(2), AtEff::eff(3), AtEff::reg(88)])
+                    ),
+                    ArrEff::new(
+                        EffVar(2),
+                        Effect::from_iter(vec![AtEff::eff(3), AtEff::reg(88)])
+                    ),
+                ])
+                .is_transitive());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![
+                            AtEff::eff(1),
+                            AtEff::eff(2),
+                            AtEff::eff(9),
+                            AtEff::reg(88),
+                            AtEff::reg(48),
+                            AtEff::reg(3),
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![
+                            AtEff::eff(2),
+                            AtEff::eff(3),
+                            AtEff::reg(1006),
+                            AtEff::reg(88),
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(2),
+                        Effect::from_iter(vec![AtEff::eff(3), AtEff::reg(88)])
+                    ),
+                ])
+                .is_transitive());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![
+                            AtEff::eff(1),
+                            AtEff::reg(1006),
+                            AtEff::eff(2),
+                            AtEff::eff(9),
+                            AtEff::reg(88),
+                            AtEff::reg(48),
+                            AtEff::eff(3),
+                            AtEff::reg(3),
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(1),
+                        Effect::from_iter(vec![
+                            AtEff::eff(2),
+                            AtEff::eff(3),
+                            AtEff::reg(1006),
+                            AtEff::reg(88),
+                        ])
+                    ),
+                    ArrEff::new(
+                        EffVar(2),
+                        Effect::from_iter(vec![AtEff::eff(3), AtEff::reg(88)])
+                    ),
+                ])
+                .is_transitive());
             }
         }
     }
