@@ -123,6 +123,19 @@ impl ArrEffSet {
     fn is_consistent(&self) -> bool {
         self.is_functional() && self.is_closed() && self.is_transitive()
     }
+
+    /// Gets the domain of a *functional* set of arrow effects.
+    ///
+    /// # Panics
+    ///
+    /// Panics if not *functional*.
+    fn domain(&self) -> HashSet<&EffVar> {
+        self.get_effect_map()
+            .unwrap()
+            .into_iter()
+            .map(|x| x.0)
+            .collect()
+    }
 }
 
 impl Basis {
@@ -165,6 +178,15 @@ impl Basis {
 
     fn is_consistent(&self) -> bool {
         self.e.frv().is_subset(&self.q.iter().collect()) && self.e.is_consistent()
+    }
+
+    /// Gets the domain of a basis whose set of arrow effects is *functional*.
+    ///
+    /// # Panics
+    ///
+    /// Panics if not *functional*.
+    fn domain(&self) -> (HashSet<&RegVar>, HashSet<&EffVar>) {
+        (self.q.iter().collect(), self.e.domain())
     }
 }
 
