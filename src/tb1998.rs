@@ -359,6 +359,95 @@ pub mod region {
                 ])
                 .is_functional());
             }
+
+            fn is_closed() {
+                assert!(ArrEffSet::default().is_closed());
+
+                assert!(
+                    ArrEffSet::from_iter(vec![ArrEff::new(EffVar(0), Effect::default())])
+                        .is_closed()
+                );
+
+                assert!(ArrEffSet::from_iter(vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::reg(0)])
+                )])
+                .is_closed());
+
+                assert!(ArrEffSet::from_iter(vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::eff(0)])
+                )])
+                .is_closed());
+
+                assert!(!ArrEffSet::from_iter(vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::eff(1)])
+                )])
+                .is_closed());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(1), Effect::new())
+                ])
+                .is_closed());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(2), Effect::new())
+                ])
+                .is_closed());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(2)])),
+                    ArrEff::new(EffVar(2), Effect::new())
+                ])
+                .is_closed());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(2)])),
+                    ArrEff::new(EffVar(2), Effect::new())
+                ])
+                .is_closed());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::reg(2), AtEff::eff(5)])
+                    ),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(5)])),
+                    ArrEff::new(EffVar(5), Effect::new())
+                ])
+                .is_closed());
+
+                assert!(ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::reg(2), AtEff::eff(5)])
+                    ),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(5)])),
+                    ArrEff::new(EffVar(5), Effect::from_iter(vec![AtEff::eff(7)])),
+                    ArrEff::new(EffVar(5), Effect::from_iter(vec![AtEff::eff(6)])),
+                    ArrEff::new(EffVar(6), Effect::from_iter(vec![AtEff::eff(1)])),
+                    ArrEff::new(EffVar(7), Effect::from_iter(vec![AtEff::eff(0)]))
+                ])
+                .is_closed());
+
+                assert!(!ArrEffSet::from_iter(vec![
+                    ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1), AtEff::reg(2), AtEff::eff(5)])
+                    ),
+                    ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(5)])),
+                    ArrEff::new(EffVar(5), Effect::from_iter(vec![AtEff::eff(7)])),
+                    ArrEff::new(EffVar(5), Effect::from_iter(vec![AtEff::eff(6)])),
+                    ArrEff::new(EffVar(6), Effect::from_iter(vec![AtEff::eff(3)])),
+                    ArrEff::new(EffVar(7), Effect::from_iter(vec![AtEff::eff(0)]))
+                ])
+                .is_closed());
+            }
         }
     }
 
