@@ -12,7 +12,7 @@ use basis::Basis;
 pub mod basis;
 
 /// A region variable.
-#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct RegVar(usize);
 
 /// A typed region-annotated term.
@@ -37,18 +37,18 @@ pub struct Triple {
 pub struct EffVar(usize);
 
 /// An atomic effect.
-#[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum AtEff {
     Reg(RegVar),
     Eff(EffVar),
 }
 
 /// An effect
-#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Effect(BTreeSet<AtEff>);
 
 /// An arrow effect.
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ArrEff {
     handle: EffVar,
     latent: Effect,

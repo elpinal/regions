@@ -188,6 +188,13 @@ impl Basis {
     fn domain(&self) -> (HashSet<&RegVar>, HashSet<&EffVar>) {
         (self.q.iter().collect(), self.e.domain())
     }
+
+    fn union(&self, another: &Basis) -> Basis {
+        Basis {
+            q: self.q.union(&another.q).cloned().collect(),
+            e: ArrEffSet(self.e.0.union(&another.e.0).cloned().collect()),
+        }
+    }
 }
 
 #[cfg(test)]
