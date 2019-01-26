@@ -52,7 +52,7 @@ pub mod region {
         use super::*;
 
         use std::collections::BTreeSet;
-        use std::collections::HashSet;
+        use std::collections::{HashMap, HashSet};
 
         /// A set of arrow effects.
         #[derive(Default)]
@@ -88,6 +88,18 @@ pub mod region {
         impl<'a> FEV<'a> for Basis {
             fn fev(&self) -> HashSet<&EffVar> {
                 self.e.fev()
+            }
+        }
+
+        impl ArrEffSet {
+            fn get_effect_map(&self) -> Option<HashMap<&EffVar, &Effect>> {
+                let mut m = HashMap::new();
+                for ae in self.0.iter() {
+                    if m.insert(&ae.handle, &ae.latent).is_some() {
+                        return None;
+                    }
+                }
+                Some(m)
             }
         }
 
