@@ -42,6 +42,7 @@ pub mod region {
 
     use std::collections::BTreeSet;
     use std::collections::HashSet;
+    use std::iter::FromIterator;
 
     use basis::Basis;
 
@@ -210,6 +211,12 @@ pub mod region {
         }
     }
 
+    impl FromIterator<AtEff> for Effect {
+        fn from_iter<I: IntoIterator<Item = AtEff>>(iter: I) -> Self {
+            Effect(iter.into_iter().collect())
+        }
+    }
+
     impl AtEff {
         fn reg(n: usize) -> Self {
             AtEff::Reg(RegVar(n))
@@ -223,10 +230,6 @@ pub mod region {
     impl Effect {
         pub fn new() -> Self {
             Effect(BTreeSet::new())
-        }
-
-        fn from_vec(v: Vec<AtEff>) -> Self {
-            Effect(v.into_iter().collect())
         }
     }
 
@@ -248,45 +251,45 @@ pub mod region {
             );
 
             assert_eq!(
-                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
-                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)]))
+                ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)])),
+                ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)]))
             );
 
             assert_eq!(
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::reg(0), AtEff::eff(8)])
+                    Effect::from_iter(vec![AtEff::reg(0), AtEff::eff(8)])
                 ),
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::eff(8), AtEff::reg(0)])
+                    Effect::from_iter(vec![AtEff::eff(8), AtEff::reg(0)])
                 )
             );
 
             assert_eq!(
-                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
+                ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)])),
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::reg(0), AtEff::reg(0)])
+                    Effect::from_iter(vec![AtEff::reg(0), AtEff::reg(0)])
                 )
             );
 
             assert_ne!(
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::reg(0), AtEff::eff(8)])
+                    Effect::from_iter(vec![AtEff::reg(0), AtEff::eff(8)])
                 ),
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::eff(0), AtEff::reg(0)])
+                    Effect::from_iter(vec![AtEff::eff(0), AtEff::reg(0)])
                 )
             );
 
             assert_ne!(
-                ArrEff::new(EffVar(0), Effect::from_vec(vec![AtEff::reg(0)])),
+                ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)])),
                 ArrEff::new(
                     EffVar(0),
-                    Effect::from_vec(vec![AtEff::reg(0), AtEff::reg(1)])
+                    Effect::from_iter(vec![AtEff::reg(0), AtEff::reg(1)])
                 )
             );
         }
