@@ -67,6 +67,12 @@ pub mod region {
             e: ArrEffSet,
         }
 
+        impl FromIterator<ArrEff> for ArrEffSet {
+            fn from_iter<I: IntoIterator<Item = ArrEff>>(iter: I) -> Self {
+                ArrEffSet(BTreeSet::from_iter(iter))
+            }
+        }
+
         impl<'a> FRV<'a> for ArrEffSet {
             fn frv(&self) -> HashSet<&RegVar> {
                 self.0.iter().map(|ae| ae.frv()).flatten().collect()
@@ -101,6 +107,11 @@ pub mod region {
         }
 
         impl ArrEffSet {
+            /// Creates an empty set of arrow effects.
+            pub fn new() -> Self {
+                ArrEffSet(BTreeSet::new())
+            }
+
             /// Gets the effect map of a *functional* set of arrow effects.
             pub fn get_effect_map(&self) -> Result<HashMap<&EffVar, &Effect>, NotFunctionalError> {
                 let mut m = HashMap::new();
