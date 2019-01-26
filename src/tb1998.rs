@@ -199,6 +199,8 @@ pub mod region {
 
         #[cfg(test)]
         mod tests {
+            #![warn(dead_code)]
+
             use super::*;
 
             #[test]
@@ -717,6 +719,8 @@ pub mod region {
 
     #[cfg(test)]
     mod tests {
+        #![warn(dead_code)]
+
         use super::*;
 
         #[test]
