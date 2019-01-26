@@ -126,6 +126,20 @@ pub mod region {
                 Ok(m)
             }
 
+            fn get(&self, ev: &EffVar) -> BTreeSet<&AtEff> {
+                self.0
+                    .iter()
+                    .filter_map(|ae| {
+                        if &ae.handle == ev {
+                            Some(&ae.latent)
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten()
+                    .collect()
+            }
+
             fn is_functional(&self) -> bool {
                 self.get_effect_map().is_ok()
             }
@@ -449,6 +463,36 @@ pub mod region {
                 ])
                 .is_closed());
             }
+
+            #[test]
+            fn arr_eff_set_get() {
+                assert_eq!(ArrEffSet::default().get(&EffVar(0)), BTreeSet::new());
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![ArrEff::new(EffVar(0), Effect::new())])
+                        .get(&EffVar(0)),
+                    BTreeSet::new()
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1)])
+                    )])
+                    .get(&EffVar(0)),
+                    BTreeSet::from_iter(vec![&AtEff::eff(1)])
+                );
+
+                assert_eq!(
+                    ArrEffSet::from_iter(vec![
+                        ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                        ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(2)])),
+                        ArrEff::new(EffVar(1), Effect::from_iter(vec![AtEff::eff(3)])),
+                    ])
+                    .get(&EffVar(0)),
+                    BTreeSet::from_iter(vec![&AtEff::eff(1), &AtEff::eff(2)])
+                );
+            }
         }
     }
 
@@ -624,6 +668,15 @@ pub mod region {
     impl FromIterator<AtEff> for Effect {
         fn from_iter<I: IntoIterator<Item = AtEff>>(iter: I) -> Self {
             Effect(iter.into_iter().collect())
+        }
+    }
+
+    impl<'a> IntoIterator for &'a Effect {
+        type Item = &'a AtEff;
+        type IntoIter = btree_set::Iter<'a, AtEff>;
+
+        fn into_iter(self) -> Self::IntoIter {
+            self.0.iter()
         }
     }
 
