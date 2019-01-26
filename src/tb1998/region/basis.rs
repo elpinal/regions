@@ -206,6 +206,19 @@ impl Basis {
         }
         None
     }
+
+    fn observe(&self, e: Effect) -> Effect {
+        let rvs = self.frv();
+        let evs = self.fev();
+        Effect(
+            e.0.into_iter()
+                .filter(|ae| match ae {
+                    AtEff::Reg(rv) => rvs.contains(&rv),
+                    AtEff::Eff(ev) => evs.contains(&ev),
+                })
+                .collect(),
+        )
+    }
 }
 
 #[cfg(test)]
@@ -920,6 +933,79 @@ mod tests {
                     ArrEff::new(EffVar(999), Effect::default()),
                 ]
             ))
+        );
+    }
+
+    quickcheck! {
+        fn prop_observe_empty(e: Effect) -> bool {
+            Basis::default().observe(e) == Effect::default()
+        }
+    }
+
+    #[test]
+    fn observe() {
+        assert_eq!(
+            Basis::default().observe(Effect::default()),
+            Effect::default()
+        );
+
+        assert_eq!(
+            Basis::new(vec![RegVar(0)], None).observe(Effect::default()),
+            Effect::default()
+        );
+
+        assert_eq!(
+            Basis::new(vec![RegVar(0)], None).observe(Effect::from_iter(vec![AtEff::reg(0)])),
+            Effect::from_iter(vec![AtEff::reg(0)])
+        );
+
+        assert_eq!(
+            Basis::new(vec![RegVar(0)], None).observe(Effect::from_iter(vec![AtEff::reg(1)])),
+            Effect::default()
+        );
+
+        assert_eq!(
+            Basis::new(
+                vec![RegVar(0)],
+                vec![ArrEff::new(EffVar(0), Effect::default())]
+            )
+            .observe(Effect::from_iter(vec![
+                AtEff::eff(0),
+                AtEff::eff(1),
+                AtEff::reg(0),
+            ])),
+            Effect::from_iter(vec![AtEff::eff(0), AtEff::reg(0)])
+        );
+
+        assert_eq!(
+            Basis::new(
+                vec![RegVar(0)],
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![
+                        AtEff::reg(0),
+                        AtEff::reg(1),
+                        AtEff::eff(1),
+                        AtEff::eff(2),
+                    ])
+                )]
+            )
+            .observe(Effect::from_iter(vec![
+                AtEff::eff(0),
+                AtEff::eff(1),
+                AtEff::reg(0),
+                AtEff::reg(1),
+                AtEff::reg(2),
+                AtEff::eff(2),
+                AtEff::eff(3),
+            ])),
+            Effect::from_iter(vec![
+                AtEff::eff(0),
+                AtEff::eff(1),
+                AtEff::reg(0),
+                AtEff::reg(1),
+                AtEff::eff(2),
+            ])
         );
     }
 }
