@@ -109,8 +109,7 @@ impl ArrEffSet {
 
     fn is_transitive(&self) -> bool {
         for ae in self.0.iter() {
-            let f: fn(&AtEff) -> Option<&EffVar> = |ae: &AtEff| ae.into();
-            let evs = ae.latent.iter().map(f).flatten();
+            let evs = ae.latent.iter().map(Option::from).flatten();
             for ev in evs {
                 if !self.get(ev).is_subset(&ae.latent.0.iter().collect()) {
                     return false;
