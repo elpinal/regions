@@ -5,6 +5,7 @@ use super::*;
 use std::collections::BTreeSet;
 use std::collections::{HashMap, HashSet};
 
+use failure;
 use failure::Fail;
 
 /// A set of arrow effects.
@@ -16,6 +17,116 @@ pub struct ArrEffSet(BTreeSet<ArrEff>);
 pub struct Basis {
     q: HashSet<RegVar>,
     e: ArrEffSet,
+}
+
+trait Consistent {
+    type Error;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error>;
+}
+
+#[derive(Debug, Fail, PartialEq)]
+enum ConsistenceError {
+    #[fail(display = "inconsistence basis")]
+    InconsistentBasis,
+
+    #[fail(display = "unbound region variable: {:?}", _0)]
+    UnboundRegionVariable(RegVar),
+
+    #[fail(display = "unbound region variables")]
+    UnboundRegionVariables,
+
+    #[fail(display = "unbound effect variable: {:?}", _0)]
+    UnboundEffectVariable(EffVar),
+
+    #[fail(display = "unbound arrow effect: {:?}", _0)]
+    UnboundArrowEffect(ArrEff),
+
+    #[fail(display = "missing effects which {:?} denotes", _0)]
+    MissingDenotation(EffVar),
+}
+
+impl Consistent for RegVar {
+    type Error = ConsistenceError;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        if !basis.is_consistent() {
+            return Err(ConsistenceError::InconsistentBasis);
+        }
+        if basis.q.contains(self) {
+            return Ok(());
+        }
+        Err(ConsistenceError::UnboundRegionVariable(self.clone()))
+    }
+}
+
+impl Consistent for ArrEff {
+    type Error = ConsistenceError;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        if !basis.is_consistent() {
+            return Err(ConsistenceError::InconsistentBasis);
+        }
+        if basis.e.0.contains(self) {
+            return Ok(());
+        }
+        Err(ConsistenceError::UnboundArrowEffect(self.clone()))
+    }
+}
+
+impl Consistent for PType {
+    type Error = ConsistenceError;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        self.ty.is_consistent(basis)?;
+        self.reg.is_consistent(basis)?;
+        Ok(())
+    }
+}
+
+impl Consistent for Type {
+    type Error = ConsistenceError;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        use Type::*;
+        match *self {
+            Int | Var(_) => {
+                if !basis.is_consistent() {
+                    return Err(ConsistenceError::InconsistentBasis);
+                }
+            }
+            Arrow(ref pt1, ref ae, ref pt2) => {
+                pt1.is_consistent(basis)?;
+                ae.is_consistent(basis)?;
+                pt2.is_consistent(basis)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl Consistent for Effect {
+    type Error = failure::Error;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        if !basis.is_consistent() {
+            Err(ConsistenceError::InconsistentBasis)?;
+        }
+        if !self.frv().is_subset(&basis.q.iter().collect()) {
+            Err(ConsistenceError::UnboundRegionVariables)?;
+        }
+        let map = basis.e.get_effect_map()?;
+        for ev in self.iter().filter_map(Option::<&EffVar>::from) {
+            if let Some(eff) = map.get(ev) {
+                if !eff.0.is_subset(&self.0) {
+                    Err(ConsistenceError::MissingDenotation(ev.clone()))?;
+                }
+            } else {
+                Err(ConsistenceError::UnboundEffectVariable(ev.clone()))?;
+            }
+        }
+        Ok(())
+    }
 }
 
 impl FromIterator<ArrEff> for ArrEffSet {
@@ -1005,6 +1116,108 @@ mod tests {
                 AtEff::reg(1),
                 AtEff::eff(2),
             ])
+        );
+    }
+
+    #[test]
+    fn consistency() {
+        assert_eq!(
+            RegVar(0).is_consistent(&Basis::default()),
+            Err(ConsistenceError::UnboundRegionVariable(RegVar(0)))
+        );
+
+        assert!(RegVar(0)
+            .is_consistent(&Basis::new(vec![RegVar(0)], None))
+            .is_ok());
+
+        assert_eq!(
+            RegVar(1).is_consistent(&Basis::new(vec![RegVar(0)], None)),
+            Err(ConsistenceError::UnboundRegionVariable(RegVar(1)))
+        );
+
+        assert_eq!(
+            ArrEff::new(EffVar(0), Effect::default()).is_consistent(&Basis::default()),
+            Err(ConsistenceError::UnboundArrowEffect(ArrEff::new(
+                EffVar(0),
+                Effect::default()
+            )))
+        );
+
+        assert!(ArrEff::new(EffVar(0), Effect::default())
+            .is_consistent(&Basis::new(
+                None,
+                vec![ArrEff::new(EffVar(0), Effect::default())]
+            ))
+            .is_ok());
+
+        assert_eq!(
+            ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)])).is_consistent(
+                &Basis::new(None, vec![ArrEff::new(EffVar(0), Effect::default())])
+            ),
+            Err(ConsistenceError::UnboundArrowEffect(ArrEff::new(
+                EffVar(0),
+                Effect::from_iter(vec![AtEff::reg(0)])
+            )))
+        );
+
+        assert_eq!(
+            ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::reg(0)])).is_consistent(
+                &Basis::new(
+                    None,
+                    vec![ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::eff(1)])
+                    )]
+                )
+            ),
+            Err(ConsistenceError::InconsistentBasis)
+        );
+
+        assert!(Effect::default().is_consistent(&Basis::default()).is_ok());
+
+        assert_eq!(
+            Effect::from_iter(vec![AtEff::reg(0)])
+                .is_consistent(&Basis::default())
+                .unwrap_err()
+                .as_fail()
+                .downcast_ref(),
+            Some(&ConsistenceError::UnboundRegionVariables)
+        );
+
+        assert!(Effect::from_iter(vec![AtEff::reg(0)])
+            .is_consistent(&Basis::new(vec![RegVar(0)], None))
+            .is_ok());
+
+        assert!(Effect::from_iter(vec![AtEff::eff(0)])
+            .is_consistent(&Basis::new(
+                None,
+                vec![ArrEff::new(EffVar(0), Effect::default())]
+            ))
+            .is_ok());
+
+        assert!(Effect::from_iter(vec![AtEff::eff(0), AtEff::reg(0)])
+            .is_consistent(&Basis::new(
+                vec![RegVar(0)],
+                vec![ArrEff::new(
+                    EffVar(0),
+                    Effect::from_iter(vec![AtEff::reg(0)])
+                )]
+            ))
+            .is_ok());
+
+        assert_eq!(
+            Effect::from_iter(vec![AtEff::eff(0)])
+                .is_consistent(&Basis::new(
+                    vec![RegVar(0)],
+                    vec![ArrEff::new(
+                        EffVar(0),
+                        Effect::from_iter(vec![AtEff::reg(0)])
+                    )]
+                ))
+                .unwrap_err()
+                .as_fail()
+                .downcast_ref(),
+            Some(&ConsistenceError::MissingDenotation(EffVar(0)))
         );
     }
 }
