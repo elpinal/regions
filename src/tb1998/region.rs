@@ -1,6 +1,7 @@
 //! The target language.
 
 use super::*;
+use crate::tb1998::ml::MLType;
 
 use std::collections::btree_set;
 use std::collections::BTreeSet;
@@ -201,6 +202,23 @@ impl<'a> From<&'a AtEff> for Option<&'a EffVar> {
             AtEff::Eff(ref ev) => Some(ev),
             _ => None,
         }
+    }
+}
+
+impl From<Type> for MLType {
+    fn from(ty: Type) -> Self {
+        use Type::*;
+        match ty {
+            Int => MLType::Int,
+            Var(v) => MLType::Var(v),
+            Arrow(pt1, _, pt2) => MLType::arrow((*pt1).into(), (*pt2).into()),
+        }
+    }
+}
+
+impl From<PType> for MLType {
+    fn from(pt: PType) -> Self {
+        MLType::from(pt.ty)
     }
 }
 

@@ -23,3 +23,9 @@ pub enum Exp {
 }
 
 struct MLTypeEnv(Vec<MLTypeScheme>);
+
+impl MLType {
+    pub fn arrow(ty1: MLType, ty2: MLType) -> Self {
+        MLType::Arrow(Box::new(ty1), Box::new(ty2))
+    }
+}
