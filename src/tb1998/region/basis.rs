@@ -320,6 +320,15 @@ impl Basis {
         }
     }
 
+    /// Returns a fresh type with a place.
+    /// Assumes `self` is a consistent basis.
+    fn fresh_type_with_place(&mut self, ty: MLType) -> PType {
+        PType {
+            ty: self.fresh_type(ty),
+            reg: self.fresh_reg_var(),
+        }
+    }
+
     pub fn is_consistent(&self) -> bool {
         self.e.frv().is_subset(&self.q.iter().collect()) && self.e.is_consistent()
     }
