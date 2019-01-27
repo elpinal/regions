@@ -273,6 +273,12 @@ impl Basis {
         RegVar(0)
     }
 
+    fn fresh_reg_var_mut(&mut self) -> RegVar {
+        let rv = self.fresh_reg_var();
+        self.q.insert(rv.clone());
+        rv
+    }
+
     fn fresh_eff_var(&self) -> EffVar {
         let evs = self.fev();
         if !evs.is_empty() {
@@ -284,6 +290,34 @@ impl Basis {
             }
         }
         EffVar(0)
+    }
+
+    fn fresh_arrow_effect_mut(&mut self) -> ArrEff {
+        let ev = self.fresh_eff_var();
+        let ae = ArrEff::new(ev, Effect::default());
+        self.e.0.insert(ae.clone());
+        ae
+    }
+
+    /// Returns a fresh type.
+    /// Assumes `self` is a consistent basis.
+    fn fresh_type(&mut self, ty: MLType) -> Type {
+        use Type::*;
+        match ty {
+            MLType::Int => Int,
+            MLType::Var(v) => Var(v),
+            MLType::Arrow(ty1, ty2) => {
+                let ty1 = self.fresh_type(*ty1);
+                let ty2 = self.fresh_type(*ty2);
+
+                let rv1 = self.fresh_reg_var_mut();
+                let rv2 = self.fresh_reg_var_mut();
+
+                let ae = self.fresh_arrow_effect_mut();
+
+                Type::arrow(PType { ty: ty1, reg: rv1 }, ae, PType { ty: ty2, reg: rv2 })
+            }
+        }
     }
 
     pub fn is_consistent(&self) -> bool {

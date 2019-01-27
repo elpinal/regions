@@ -248,6 +248,12 @@ impl ArrEff {
     }
 }
 
+impl Type {
+    pub fn arrow(pt1: PType, ae: ArrEff, pt2: PType) -> Self {
+        Type::Arrow(Box::new(pt1), ae, Box::new(pt2))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![warn(dead_code)]
