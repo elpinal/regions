@@ -329,6 +329,10 @@ impl Basis {
                 .collect(),
         )
     }
+
+    fn is_subset(&self, another: &Self) -> bool {
+        self.q.is_subset(&another.q) && self.e.0.is_subset(&another.e.0)
+    }
 }
 
 #[cfg(test)]
