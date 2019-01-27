@@ -3,6 +3,7 @@
 use super::*;
 
 /// A type.
+#[derive(Clone, Debug, PartialEq)]
 pub enum MLType {
     Int,
     Var(TyVar),

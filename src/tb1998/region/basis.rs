@@ -375,9 +375,7 @@ mod tests {
 
     use super::*;
 
-    use quickcheck::quickcheck;
-    use quickcheck::Arbitrary;
-    use quickcheck::Gen;
+    use quickcheck::*;
 
     #[test]
     fn basis_frv() {
@@ -973,6 +971,68 @@ mod tests {
         }
     }
 
+    impl Arbitrary for TyVar {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            TyVar(Arbitrary::arbitrary(g))
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.shrink().map(TyVar))
+        }
+    }
+
+    impl Arbitrary for MLType {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            use rand::Rng;
+            if g.gen() {
+                MLType::Int
+            } else if g.gen() {
+                MLType::Var(Arbitrary::arbitrary(g))
+            } else {
+                MLType::arrow(Arbitrary::arbitrary(g), Arbitrary::arbitrary(g))
+            }
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            use MLType::*;
+            match *self {
+                Int => empty_shrinker(),
+                Var(ref tv) => Box::new(single_shrinker(Int).chain(tv.clone().shrink().map(Var))),
+                Arrow(ref ty1, ref ty2) => Box::new(
+                    single_shrinker(Int).chain(
+                        (ty1.clone(), ty2.clone())
+                            .shrink()
+                            .map(|(x, y)| Arrow(x, y)),
+                    ),
+                ),
+            }
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct ConsistentBasis(Basis);
+
+    impl Arbitrary for ConsistentBasis {
+        fn arbitrary<G: Gen>(g: &mut G) -> Self {
+            let b: Basis = Arbitrary::arbitrary(g);
+            if b.is_consistent() {
+                ConsistentBasis(b)
+            } else {
+                Arbitrary::arbitrary(g)
+            }
+        }
+
+        fn shrink(&self) -> Box<Iterator<Item = Self>> {
+            Box::new(self.0.clone().shrink().filter_map(|b| {
+                if b.is_consistent() {
+                    Some(ConsistentBasis(b))
+                } else {
+                    None
+                }
+            }))
+        }
+    }
+
     quickcheck! {
         fn prop_disjoint_union_right_empty(b: Basis) -> bool {
             b.disjoint_union(&Basis::default()).map_or(true, |b0| b0 == b)
@@ -1257,5 +1317,21 @@ mod tests {
                 .downcast_ref(),
             Some(&ConsistenceError::MissingDenotation(EffVar(0)))
         );
+    }
+
+    #[test]
+    fn prop_fresh_type() {
+        fn f(b: ConsistentBasis, mt: MLType) -> bool {
+            let old_b = b.0.clone();
+            let mut b = old_b.clone();
+            let ty = b.fresh_type(mt.clone());
+            ty.is_consistent(&b).is_ok()
+                && MLType::from(ty.clone()) == mt
+                && old_b.is_subset(&b)
+                && b.q.difference(&old_b.q).collect::<HashSet<&RegVar>>() == ty.frv()
+        }
+        quickcheck::QuickCheck::new()
+            .tests(10)
+            .quickcheck(f as fn(ConsistentBasis, MLType) -> bool);
     }
 }

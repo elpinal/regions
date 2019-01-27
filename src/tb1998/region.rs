@@ -56,6 +56,7 @@ pub struct ArrEff {
 }
 
 /// A type.
+#[derive(Clone)]
 pub enum Type {
     Int,
     Var(TyVar),
@@ -63,6 +64,7 @@ pub enum Type {
 }
 
 /// A type with a place.
+#[derive(Clone)]
 pub struct PType {
     ty: Type,
     reg: RegVar,
