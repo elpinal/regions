@@ -19,14 +19,14 @@ pub struct Basis {
     e: ArrEffSet,
 }
 
-trait Consistent {
+pub trait Consistent {
     type Error;
 
     fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error>;
 }
 
 #[derive(Debug, Fail, PartialEq)]
-enum ConsistenceError {
+pub enum ConsistenceError {
     #[fail(display = "inconsistence basis")]
     InconsistentBasis,
 
@@ -230,7 +230,7 @@ impl ArrEffSet {
         true
     }
 
-    fn is_consistent(&self) -> bool {
+    pub fn is_consistent(&self) -> bool {
         self.is_functional() && self.is_closed() && self.is_transitive()
     }
 
@@ -286,7 +286,7 @@ impl Basis {
         EffVar(0)
     }
 
-    fn is_consistent(&self) -> bool {
+    pub fn is_consistent(&self) -> bool {
         self.e.frv().is_subset(&self.q.iter().collect()) && self.e.is_consistent()
     }
 
