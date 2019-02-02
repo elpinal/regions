@@ -72,7 +72,7 @@ pub struct PType {
 
 /// A type scheme.
 pub struct Scheme {
-    types: usize,
+    tvars: usize,
     rvars: usize,
     evars: usize,
     body: Type,
