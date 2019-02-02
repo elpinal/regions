@@ -95,6 +95,26 @@ pub trait FEV<'a, Output: IntoIterator<Item = &'a EffVar> = HashSet<&'a EffVar>>
     fn fev(&'a self) -> Output;
 }
 
+/// Primary free region variables.
+pub trait PFRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
+    fn pfrv(&'a self) -> Output;
+}
+
+/// Primary free effect variables.
+pub trait PFEV<'a, Output: IntoIterator<Item = &'a EffVar> = HashSet<&'a EffVar>> {
+    fn pfev(&'a self) -> Output;
+}
+
+/// Secondary free region variables.
+pub trait SFRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
+    fn sfrv(&'a self) -> Output;
+}
+
+/// Secondary free effect variables.
+pub trait SFEV<'a, Output: IntoIterator<Item = &'a EffVar> = HashSet<&'a EffVar>> {
+    fn sfev(&'a self) -> Output;
+}
+
 impl<'a> FRV<'a> for AtEff {
     fn frv(&self) -> HashSet<&RegVar> {
         match *self {
@@ -153,6 +173,20 @@ impl<'a> FEV<'a> for PType {
     }
 }
 
+impl<'a> PFRV<'a> for PType {
+    fn pfrv(&self) -> HashSet<&RegVar> {
+        let mut s = self.ty.pfrv();
+        s.insert(&self.reg);
+        s
+    }
+}
+
+impl<'a> PFEV<'a> for PType {
+    fn pfev(&self) -> HashSet<&EffVar> {
+        self.ty.pfev()
+    }
+}
+
 impl<'a> FRV<'a> for Type {
     fn frv(&self) -> HashSet<&RegVar> {
         use Type::*;
@@ -180,6 +214,47 @@ impl<'a> FEV<'a> for Type {
                 s1
             }
         }
+    }
+}
+
+impl<'a> PFRV<'a> for Type {
+    fn pfrv(&self) -> HashSet<&RegVar> {
+        use Type::*;
+        match *self {
+            Int | Var(_) => Default::default(),
+            Arrow(ref pt1, _, ref pt2) => {
+                let mut s1 = pt1.pfrv();
+                s1.extend(pt2.pfrv());
+                s1
+            }
+        }
+    }
+}
+
+impl<'a> PFEV<'a> for Type {
+    fn pfev(&self) -> HashSet<&EffVar> {
+        use Type::*;
+        match *self {
+            Int | Var(_) => Default::default(),
+            Arrow(ref pt1, ref ae, ref pt2) => {
+                let mut s1 = pt1.pfev();
+                s1.extend(pt2.pfev());
+                s1.insert(&ae.handle);
+                s1
+            }
+        }
+    }
+}
+
+impl<'a, T: FRV<'a> + PFRV<'a>> SFRV<'a> for T {
+    fn sfrv(&'a self) -> HashSet<&RegVar> {
+        self.frv().difference(&self.pfrv()).cloned().collect()
+    }
+}
+
+impl<'a, T: FEV<'a> + PFEV<'a>> SFEV<'a> for T {
+    fn sfev(&'a self) -> HashSet<&EffVar> {
+        self.fev().difference(&self.pfev()).cloned().collect()
     }
 }
 
