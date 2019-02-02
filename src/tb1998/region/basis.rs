@@ -129,6 +129,26 @@ impl Consistent for Effect {
     }
 }
 
+impl Consistent for InstList {
+    type Error = ConsistenceError;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        self.types
+            .iter()
+            .map(|ty| ty.is_consistent(basis))
+            .collect::<Result<_, _>>()?;
+        self.rvars
+            .iter()
+            .map(|rv| rv.is_consistent(basis))
+            .collect::<Result<_, _>>()?;
+        self.arr_effs
+            .iter()
+            .map(|ae| ae.is_consistent(basis))
+            .collect::<Result<_, _>>()?;
+        Ok(())
+    }
+}
+
 impl FromIterator<ArrEff> for ArrEffSet {
     fn from_iter<I: IntoIterator<Item = ArrEff>>(iter: I) -> Self {
         ArrEffSet(BTreeSet::from_iter(iter))
