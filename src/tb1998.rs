@@ -7,7 +7,7 @@
 pub struct Var(usize);
 
 /// A type variable.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TyVar(usize);
 
 pub mod ml;

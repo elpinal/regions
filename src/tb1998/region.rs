@@ -85,6 +85,11 @@ pub struct InstList {
     arr_effs: Vec<ArrEff>,
 }
 
+/// Free type variables.
+pub trait FTV<'a, Output: IntoIterator<Item = &'a TyVar> = HashSet<&'a TyVar>> {
+    fn ftv(&'a self) -> Output;
+}
+
 /// Free region variables.
 pub trait FRV<'a, Output: IntoIterator<Item = &'a RegVar> = HashSet<&'a RegVar>> {
     fn frv(&'a self) -> Output;
@@ -159,6 +164,12 @@ impl<'a> FEV<'a> for ArrEff {
     }
 }
 
+impl<'a> FTV<'a> for PType {
+    fn ftv(&self) -> HashSet<&TyVar> {
+        self.ty.ftv()
+    }
+}
+
 impl<'a> FRV<'a> for PType {
     fn frv(&self) -> HashSet<&RegVar> {
         let mut s = self.ty.frv();
@@ -184,6 +195,21 @@ impl<'a> PFRV<'a> for PType {
 impl<'a> PFEV<'a> for PType {
     fn pfev(&self) -> HashSet<&EffVar> {
         self.ty.pfev()
+    }
+}
+
+impl<'a> FTV<'a> for Type {
+    fn ftv(&self) -> HashSet<&TyVar> {
+        use Type::*;
+        match *self {
+            Int => Default::default(),
+            Var(ref tv) => HashSet::from_iter(Some(tv)),
+            Arrow(ref pt1, _, ref pt2) => {
+                let mut s1 = pt1.ftv();
+                s1.extend(pt2.ftv());
+                s1
+            }
+        }
     }
 }
 
@@ -243,6 +269,13 @@ impl<'a> PFEV<'a> for Type {
                 s1
             }
         }
+    }
+}
+
+impl<'a> FTV<'a> for Scheme {
+    fn ftv(&self) -> HashSet<&TyVar> {
+        let s = self.body.ftv();
+        s.into_iter().filter(|&tv| tv.0 >= self.tvars).collect()
     }
 }
 
