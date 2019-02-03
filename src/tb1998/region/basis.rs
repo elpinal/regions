@@ -269,7 +269,7 @@ impl ArrEffSet {
 }
 
 impl Basis {
-    fn new<Q, E>(q: Q, e: E) -> Self
+    pub fn new<Q, E>(q: Q, e: E) -> Self
     where
         Q: IntoIterator<Item = RegVar>,
         E: IntoIterator<Item = ArrEff>,

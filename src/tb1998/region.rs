@@ -428,6 +428,16 @@ impl Scheme {
 
         Ok(())
     }
+
+    fn bound(&self) -> Basis {
+        let aes = self
+            .body
+            .arrow_effects()
+            .into_iter()
+            .filter(|&ae| ae.handle.0 < self.evars)
+            .cloned();
+        Basis::new((0..self.rvars).map(RegVar), aes)
+    }
 }
 
 #[cfg(test)]
