@@ -44,6 +44,12 @@ pub enum ConsistenceError {
 
     #[fail(display = "missing effects which {:?} denotes", _0)]
     MissingDenotation(EffVar),
+
+    #[fail(
+        display = "bound variables must be chosen disjoint from basis: the bound basis is {:?}",
+        _0
+    )]
+    NotDisjoint(Basis),
 }
 
 impl Consistent for RegVar {
@@ -145,6 +151,26 @@ impl Consistent for InstList {
             .iter()
             .map(|ae| ae.is_consistent(basis))
             .collect::<Result<_, _>>()?;
+        Ok(())
+    }
+}
+
+impl Consistent for Scheme {
+    type Error = failure::Error;
+
+    fn is_consistent(&self, basis: &Basis) -> Result<(), Self::Error> {
+        if !basis.is_consistent() {
+            Err(ConsistenceError::InconsistentBasis)?;
+        }
+
+        self.has_structural_quantification()?;
+
+        let basis0 = self.bound();
+        if let Some(basis1) = basis.disjoint_union(&basis0) {
+            self.body.is_consistent(&basis1)?;
+        } else {
+            Err(ConsistenceError::NotDisjoint(basis0))?;
+        }
         Ok(())
     }
 }
