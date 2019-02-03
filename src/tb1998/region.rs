@@ -8,6 +8,8 @@ use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
+use failure::Fail;
+
 use basis::Basis;
 
 pub mod basis;
@@ -364,6 +366,45 @@ impl Type {
     }
 }
 
+#[derive(Debug, Fail, PartialEq)]
+pub enum StructuralError {
+    #[fail(display = "not structural quantification missing {:?}", _0)]
+    Region(RegVar),
+
+    #[fail(display = "not structural quantification missing {:?}", _0)]
+    Effect(EffVar),
+
+    #[fail(display = "not structural quantification missing {:?}", _0)]
+    Type(TyVar),
+}
+
+impl Scheme {
+    fn has_structural_quantification(&self) -> Result<(), StructuralError> {
+        let rvs = self.body.pfrv();
+        for i in 0..self.rvars {
+            if !rvs.contains(&RegVar(i)) {
+                return Err(StructuralError::Region(RegVar(i)));
+            }
+        }
+
+        let evs = self.body.pfev();
+        for i in 0..self.evars {
+            if !evs.contains(&EffVar(i)) {
+                return Err(StructuralError::Effect(EffVar(i)));
+            }
+        }
+
+        let tvs = self.body.ftv();
+        for i in 0..self.tvars {
+            if !tvs.contains(&TyVar(i)) {
+                return Err(StructuralError::Type(TyVar(i)));
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #![warn(dead_code)]
@@ -418,6 +459,104 @@ mod tests {
                 EffVar(0),
                 Effect::from_iter(vec![AtEff::reg(0), AtEff::reg(1)])
             )
+        );
+    }
+
+    #[test]
+    fn structural_quantification() {
+        assert_eq!(
+            Scheme {
+                tvars: 0,
+                rvars: 0,
+                evars: 0,
+                body: Type::Int,
+            }
+            .has_structural_quantification(),
+            Ok(())
+        );
+
+        assert_eq!(
+            Scheme {
+                tvars: 0,
+                rvars: 0,
+                evars: 1,
+                body: Type::Int,
+            }
+            .has_structural_quantification(),
+            Err(StructuralError::Effect(EffVar(0)))
+        );
+
+        assert_eq!(
+            Scheme {
+                tvars: 0,
+                rvars: 0,
+                evars: 1,
+                body: Type::arrow(
+                    PType {
+                        ty: Type::Int,
+                        reg: RegVar(0),
+                    },
+                    ArrEff::new(EffVar(0), Effect::default()),
+                    PType {
+                        ty: Type::Int,
+                        reg: RegVar(0),
+                    }
+                ),
+            }
+            .has_structural_quantification(),
+            Ok(())
+        );
+
+        assert_eq!(
+            Scheme {
+                tvars: 0,
+                rvars: 1,
+                evars: 2,
+                body: Type::arrow(
+                    PType {
+                        ty: Type::Int,
+                        reg: RegVar(0),
+                    },
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    PType {
+                        ty: Type::Int,
+                        reg: RegVar(0),
+                    }
+                ),
+            }
+            .has_structural_quantification(),
+            Err(StructuralError::Effect(EffVar(1)))
+        );
+
+        assert_eq!(
+            Scheme {
+                tvars: 0,
+                rvars: 1,
+                evars: 2,
+                body: Type::arrow(
+                    PType {
+                        ty: Type::Int,
+                        reg: RegVar(0),
+                    },
+                    ArrEff::new(EffVar(0), Effect::from_iter(vec![AtEff::eff(1)])),
+                    PType {
+                        ty: Type::arrow(
+                            PType {
+                                ty: Type::Int,
+                                reg: RegVar(1011),
+                            },
+                            ArrEff::new(EffVar(1), Effect::default()),
+                            PType {
+                                ty: Type::Int,
+                                reg: RegVar(1032),
+                            }
+                        ),
+                        reg: RegVar(0),
+                    }
+                ),
+            }
+            .has_structural_quantification(),
+            Ok(())
         );
     }
 }
