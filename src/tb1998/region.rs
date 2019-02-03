@@ -293,6 +293,31 @@ impl<'a, T: FEV<'a> + PFEV<'a>> SFEV<'a> for T {
     }
 }
 
+trait ArrowEffects {
+    fn arrow_effects(&self) -> BTreeSet<&ArrEff>;
+}
+
+impl ArrowEffects for PType {
+    fn arrow_effects(&self) -> BTreeSet<&ArrEff> {
+        self.ty.arrow_effects()
+    }
+}
+
+impl ArrowEffects for Type {
+    fn arrow_effects(&self) -> BTreeSet<&ArrEff> {
+        use Type::*;
+        match *self {
+            Int | Var(_) => Default::default(),
+            Arrow(ref pt1, ref ae, ref pt2) => {
+                let mut s = pt1.arrow_effects();
+                s.extend(pt2.arrow_effects());
+                s.insert(ae);
+                s
+            }
+        }
+    }
+}
+
 impl FromIterator<AtEff> for Effect {
     fn from_iter<I: IntoIterator<Item = AtEff>>(iter: I) -> Self {
         Effect(iter.into_iter().collect())
